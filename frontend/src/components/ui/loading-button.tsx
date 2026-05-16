@@ -11,7 +11,7 @@ export function LoadingButton({ children, disabled, isLoading = false, loadingLa
   return (
     <Button disabled={disabled || isLoading} {...props}>
       {isLoading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-      <span>{isLoading ? loadingLabel ?? children : children}</span>
+      <span className="inline-flex items-center gap-2 whitespace-nowrap">{isLoading ? loadingLabel ?? children : children}</span>
     </Button>
   )
 }

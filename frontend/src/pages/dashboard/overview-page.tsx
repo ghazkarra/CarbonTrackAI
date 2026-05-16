@@ -21,7 +21,7 @@ const defaultSummary: DashboardSummary = {
 }
 
 function formatNumber(value: string | number, fractionDigits = 2) {
-  return Number(value).toLocaleString('en-US', { maximumFractionDigits: fractionDigits })
+  return Number(value).toLocaleString('id-ID', { maximumFractionDigits: fractionDigits })
 }
 
 export function OverviewPage() {
@@ -39,7 +39,7 @@ export function OverviewPage() {
       setError(null)
       apiRequest<DashboardSummary>(`/api/dashboard/summary?period_month=${periodMonth}`, { token })
         .then(setSummary)
-        .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Failed to load dashboard'))
+        .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Gagal memuat dashboard'))
         .finally(() => setIsLoading(false))
     }, 0)
 
@@ -48,27 +48,27 @@ export function OverviewPage() {
 
   const metrics = [
     {
-      title: 'Total Energy',
+      title: 'Total energi',
       value: `${formatNumber(summary.total_energy_kwh)} kWh`,
-      change: isLoading ? 'Loading latest records' : `Period ${periodMonth}`,
+      change: isLoading ? 'Memuat data terbaru' : `Periode ${periodMonth}`,
       tone: 'neutral' as const,
     },
     {
-      title: 'Estimated CO2e',
+      title: 'Estimasi CO2e',
       value: `${formatNumber(summary.estimated_co2e_kg)} kg`,
       change: `${formatNumber(summary.estimated_co2e_ton, 4)} ton CO2e`,
       tone: 'neutral' as const,
     },
     {
-      title: 'Active Alerts',
+      title: 'Peringatan aktif',
       value: String(summary.active_alerts_count),
-      change: 'Awaiting acknowledgement',
+      change: 'Menunggu tindak lanjut',
       tone: summary.active_alerts_count > 0 ? 'neutral' as const : 'good' as const,
     },
     {
-      title: 'Completed Actions',
+      title: 'Aksi selesai',
       value: String(summary.completed_recommendations_this_month),
-      change: `${summary.recommendation_progress.active} active recommendations`,
+      change: `${summary.recommendation_progress.active} rekomendasi aktif`,
       tone: 'good' as const,
     },
   ]
@@ -78,16 +78,16 @@ export function OverviewPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Badge className="bg-primary/10 text-primary hover:bg-primary/15">Admin Dashboard</Badge>
+            <Badge className="bg-primary/10 text-primary hover:bg-primary/15">Dashboard Admin</Badge>
             <Badge variant="outline" className="border-primary/30 text-primary">CarbonTrackAI</Badge>
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Carbon operations overview</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-            Monitor emissions, reduction targets, reporting health, and organization activity from one control center.
+          <h1 className="text-4xl font-semibold tracking-tight">Ringkasan operasional karbon</h1>
+          <p className="mt-3 max-w-2xl text-base text-muted-foreground">
+            Pantau emisi, target reduksi, kondisi pelaporan, dan aktivitas organisasi dari satu pusat kendali.
           </p>
         </div>
         <div className="flex gap-2">
-          <MonthPicker value={periodMonth} onChange={setPeriodMonth} ariaLabel="Report month" className="w-40" />
+          <MonthPicker value={periodMonth} onChange={setPeriodMonth} ariaLabel="Bulan laporan" className="w-40" />
         </div>
       </div>
 
@@ -102,8 +102,8 @@ export function OverviewPage() {
       <section className="grid gap-4">
         <Card className="flex min-h-[420px] flex-col border-border/70 shadow-sm">
           <CardHeader>
-            <CardTitle>Emission trend</CardTitle>
-            <CardDescription>Monthly tCO2e output versus reduction target.</CardDescription>
+            <CardTitle className="text-xl">Tren emisi</CardTitle>
+            <CardDescription className="text-base">Output tCO2e bulanan dibandingkan target reduksi.</CardDescription>
           </CardHeader>
           <CardContent className="min-h-0 flex-1">
             <EmissionsChart />
@@ -111,8 +111,8 @@ export function OverviewPage() {
         </Card>
         <Card className="border-border/70 shadow-sm">
           <CardHeader>
-            <CardTitle>Top machines</CardTitle>
-            <CardDescription>Highest energy consumption for selected period.</CardDescription>
+            <CardTitle className="text-xl">Mesin teratas</CardTitle>
+            <CardDescription className="text-base">Konsumsi energi tertinggi pada periode terpilih.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {isLoading ? Array.from({ length: 4 }).map((_, index) => (
@@ -129,15 +129,15 @@ export function OverviewPage() {
             )) : summary.top_machines.length ? summary.top_machines.map((machine) => (
               <div key={`${machine.machine_name}-${machine.machine_location}`} className="flex items-center justify-between gap-3 rounded-md border p-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{machine.machine_name}</p>
-                  <p className="text-xs text-muted-foreground">{machine.machine_location}</p>
+                  <p className="truncate text-base font-medium">{machine.machine_name}</p>
+                  <p className="text-sm text-muted-foreground">{machine.machine_location}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-primary">{formatNumber(machine.energy_kwh)} kWh</p>
-                  <p className="text-xs text-muted-foreground">{formatNumber(machine.estimated_co2e_kg)} kg CO2e</p>
+                  <p className="text-base font-semibold text-primary">{formatNumber(machine.energy_kwh)} kWh</p>
+                  <p className="text-sm text-muted-foreground">{formatNumber(machine.estimated_co2e_kg)} kg CO2e</p>
                 </div>
               </div>
-            )) : <p className="text-sm text-muted-foreground md:col-span-2 xl:col-span-4">No machine usage records yet.</p>}
+            )) : <p className="text-base text-muted-foreground md:col-span-2 xl:col-span-4">Belum ada data pemakaian mesin.</p>}
           </CardContent>
         </Card>
       </section>

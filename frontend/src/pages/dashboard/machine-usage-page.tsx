@@ -27,6 +27,15 @@ const initialForm = {
   energy_kwh: '280',
 }
 
+function translateValidationStatus(status: string) {
+  const normalized = status.toLowerCase()
+  if (normalized === 'valid') return 'Valid'
+  if (normalized === 'warning') return 'Peringatan'
+  if (normalized === 'error') return 'Error'
+
+  return status
+}
+
 export function MachineUsagePage() {
   const token = getStoredToken()
   const user = getStoredUser()
@@ -50,7 +59,7 @@ export function MachineUsagePage() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       loadRecords().catch(() => {
-        setError('Failed to load machine usage records')
+        setError('Gagal memuat data pemakaian mesin')
         setIsRecordsLoading(false)
       })
     }, 0)
@@ -82,13 +91,13 @@ export function MachineUsagePage() {
         token,
         body: JSON.stringify(parsed),
       })
-      setMessage('Machine usage saved and calculated.')
+      setMessage('Data pemakaian mesin berhasil disimpan dan dihitung.')
       await loadRecords(parsed.report_month)
     } catch (submitError) {
       if (submitError instanceof z.ZodError) {
-        setError(submitError.issues[0]?.message ?? 'Invalid form input')
+        setError(submitError.issues[0]?.message ?? 'Input formulir tidak valid')
       } else {
-        setError(submitError instanceof Error ? submitError.message : 'Failed to save machine usage')
+        setError(submitError instanceof Error ? submitError.message : 'Gagal menyimpan data pemakaian mesin')
       }
     } finally {
       setIsLoading(false)
@@ -111,10 +120,10 @@ export function MachineUsagePage() {
         body: formData,
       })
       setImportResult(result)
-      setMessage(`CSV imported: ${result.valid_rows} valid, ${result.warning_rows} warning, ${result.error_rows} error.`)
+      setMessage(`CSV berhasil diimpor: ${result.valid_rows} valid, ${result.warning_rows} peringatan, ${result.error_rows} error.`)
       await loadRecords(form.report_month)
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : 'CSV upload failed')
+      setError(uploadError instanceof Error ? uploadError.message : 'Gagal mengunggah CSV')
     } finally {
       setIsUploading(false)
     }
@@ -123,82 +132,82 @@ export function MachineUsagePage() {
   return (
     <div className="space-y-6">
       <div>
-        <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Machine Usage</Badge>
-        <h1 className="text-3xl font-semibold tracking-tight">Input usage data</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Company context: {user?.company_name ?? 'Unknown company'}</p>
+        <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Pemakaian Mesin</Badge>
+        <h1 className="text-4xl font-semibold tracking-tight">Input data pemakaian</h1>
+        <p className="mt-3 text-base text-muted-foreground">Konteks perusahaan: {user?.company_name ?? 'Perusahaan tidak diketahui'}</p>
       </div>
 
       <Tabs defaultValue="form" className="w-full gap-4">
         <Card className="w-full">
           <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <CardTitle>Machine usage input</CardTitle>
-              <CardDescription>Submit one machine usage row or upload the prepared CSV template.</CardDescription>
+              <CardTitle className="text-xl">Input pemakaian mesin</CardTitle>
+              <CardDescription className="text-base">Kirim satu baris data pemakaian atau unggah template CSV yang tersedia.</CardDescription>
             </div>
             <TabsList className="w-full shrink-0 md:w-fit">
-              <TabsTrigger value="form">Input Form</TabsTrigger>
-              <TabsTrigger value="csv">CSV Upload</TabsTrigger>
+              <TabsTrigger value="form">Form input</TabsTrigger>
+              <TabsTrigger value="csv">Unggah CSV</TabsTrigger>
             </TabsList>
           </CardHeader>
           <CardContent>
             <TabsContent value="form" className="mt-0">
               <form className="grid gap-4 lg:grid-cols-2" onSubmit={handleSubmit}>
                 <div className="grid gap-2">
-                  <Label htmlFor="report_month">Report Month</Label>
-                  <MonthPicker value={form.report_month} onChange={(value) => setForm({ ...form, report_month: value })} ariaLabel="Report month" className="w-full" />
+                  <Label htmlFor="report_month" className="text-base">Bulan laporan</Label>
+                  <MonthPicker value={form.report_month} onChange={(value) => setForm({ ...form, report_month: value })} ariaLabel="Bulan laporan" className="w-full" />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="row_no">Row No</Label>
-                  <Input id="row_no" value={form.row_no} onChange={(event) => setForm({ ...form, row_no: event.target.value })} />
+                  <Label htmlFor="row_no" className="text-base">Nomor baris</Label>
+                  <Input id="row_no" className="h-11 text-base md:text-base" value={form.row_no} onChange={(event) => setForm({ ...form, row_no: event.target.value })} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="machine_name">Machine Name</Label>
-                  <Input id="machine_name" value={form.machine_name} onChange={(event) => setForm({ ...form, machine_name: event.target.value })} />
+                  <Label htmlFor="machine_name" className="text-base">Nama mesin</Label>
+                  <Input id="machine_name" className="h-11 text-base md:text-base" value={form.machine_name} onChange={(event) => setForm({ ...form, machine_name: event.target.value })} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="machine_location">Machine Location</Label>
-                  <Input id="machine_location" value={form.machine_location} onChange={(event) => setForm({ ...form, machine_location: event.target.value })} />
+                  <Label htmlFor="machine_location" className="text-base">Lokasi mesin</Label>
+                  <Input id="machine_location" className="h-11 text-base md:text-base" value={form.machine_location} onChange={(event) => setForm({ ...form, machine_location: event.target.value })} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="machine_quantity">Quantity</Label>
-                  <Input id="machine_quantity" value={form.machine_quantity} onChange={(event) => setForm({ ...form, machine_quantity: event.target.value })} />
+                  <Label htmlFor="machine_quantity" className="text-base">Jumlah</Label>
+                  <Input id="machine_quantity" className="h-11 text-base md:text-base" value={form.machine_quantity} onChange={(event) => setForm({ ...form, machine_quantity: event.target.value })} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="machine_power_watt">Power Watt</Label>
-                  <Input id="machine_power_watt" value={form.machine_power_watt} onChange={(event) => setForm({ ...form, machine_power_watt: event.target.value })} />
+                  <Label htmlFor="machine_power_watt" className="text-base">Daya watt</Label>
+                  <Input id="machine_power_watt" className="h-11 text-base md:text-base" value={form.machine_power_watt} onChange={(event) => setForm({ ...form, machine_power_watt: event.target.value })} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="machine_power_kw">Power KW</Label>
-                  <Input id="machine_power_kw" value={form.machine_power_kw} onChange={(event) => setForm({ ...form, machine_power_kw: event.target.value })} />
+                  <Label htmlFor="machine_power_kw" className="text-base">Daya kW</Label>
+                  <Input id="machine_power_kw" className="h-11 text-base md:text-base" value={form.machine_power_kw} onChange={(event) => setForm({ ...form, machine_power_kw: event.target.value })} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="usage_hours">Usage Hours</Label>
-                  <Input id="usage_hours" value={form.usage_hours} onChange={(event) => setForm({ ...form, usage_hours: event.target.value })} />
+                  <Label htmlFor="usage_hours" className="text-base">Jam pemakaian</Label>
+                  <Input id="usage_hours" className="h-11 text-base md:text-base" value={form.usage_hours} onChange={(event) => setForm({ ...form, usage_hours: event.target.value })} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="energy_kwh">Energy KWH</Label>
-                  <Input id="energy_kwh" value={form.energy_kwh} onChange={(event) => setForm({ ...form, energy_kwh: event.target.value })} />
+                  <Label htmlFor="energy_kwh" className="text-base">Energi kWh</Label>
+                  <Input id="energy_kwh" className="h-11 text-base md:text-base" value={form.energy_kwh} onChange={(event) => setForm({ ...form, energy_kwh: event.target.value })} />
                 </div>
                 <div className="lg:col-span-2">
                   {error ? <p className="mb-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
                   {message ? <p className="mb-3 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">{message}</p> : null}
-                  <LoadingButton type="submit" isLoading={isLoading}>Save usage</LoadingButton>
+                  <LoadingButton type="submit" isLoading={isLoading}>Simpan pemakaian</LoadingButton>
                 </div>
               </form>
             </TabsContent>
             <TabsContent value="csv" className="mt-0 space-y-4">
               <Button variant="outline" asChild>
-                <a href="/sample_machine_usage_2025_02.csv" download>Download sample CSV</a>
+                <a href="/sample_machine_usage_2025_02.csv" download>Unduh contoh CSV</a>
               </Button>
               <div className="grid gap-2">
                 <Input type="file" accept=".csv" disabled={isUploading} onChange={(event) => handleCsvUpload(event.target.files?.[0] ?? null)} />
-                {isUploading ? <p className="flex items-center gap-2 text-sm text-muted-foreground"><span className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />Importing CSV</p> : null}
+                {isUploading ? <p className="flex items-center gap-2 text-sm text-muted-foreground"><span className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />Mengimpor CSV</p> : null}
               </div>
               <code className="block rounded-md bg-muted p-3 text-xs text-muted-foreground">report_month,row_no,machine_name,machine_location,machine_quantity,machine_power_watt,machine_power_kw,usage_hours,energy_kwh</code>
               {importResult ? (
                 <div className="rounded-md border p-4 text-sm">
-                  <p className="font-medium">Import result</p>
-                  <p className="mt-1 text-muted-foreground">Total {importResult.total_rows}, valid {importResult.valid_rows}, warning {importResult.warning_rows}, error {importResult.error_rows}</p>
+                  <p className="font-medium">Hasil impor</p>
+                  <p className="mt-1 text-muted-foreground">Total {importResult.total_rows}, valid {importResult.valid_rows}, peringatan {importResult.warning_rows}, error {importResult.error_rows}</p>
                 </div>
               ) : null}
             </TabsContent>
@@ -208,19 +217,19 @@ export function MachineUsagePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Usage records</CardTitle>
-          <CardDescription>Latest records for selected month.</CardDescription>
+          <CardTitle className="text-xl">Riwayat pemakaian</CardTitle>
+          <CardDescription className="text-base">Data terbaru untuk bulan terpilih.</CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-left text-sm">
+          <table className="w-full min-w-[860px] text-left text-base">
             <thead className="border-b text-muted-foreground">
               <tr>
-                <th className="py-2 pr-4">Machine</th>
-                <th className="py-2 pr-4">Location</th>
+                <th className="py-2 pr-4">Mesin</th>
+                <th className="py-2 pr-4">Lokasi</th>
                 <th className="py-2 pr-4">Qty</th>
                 <th className="py-2 pr-4">KW</th>
-                <th className="py-2 pr-4">Hours</th>
-                <th className="py-2 pr-4">Energy KWH</th>
+                <th className="py-2 pr-4">Jam</th>
+                <th className="py-2 pr-4">Energi kWh</th>
                 <th className="py-2 pr-4">Status</th>
               </tr>
             </thead>
@@ -239,12 +248,12 @@ export function MachineUsagePage() {
                   <td className="py-3 pr-4">{record.machine_power_kw}</td>
                   <td className="py-3 pr-4">{record.usage_hours}</td>
                   <td className="py-3 pr-4 text-primary">{record.energy_kwh}</td>
-                  <td className="py-3 pr-4"><Badge variant="outline">{record.validation_status}</Badge></td>
+                  <td className="py-3 pr-4"><Badge variant="outline">{translateValidationStatus(record.validation_status)}</Badge></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {!isRecordsLoading && !records.length ? <p className="py-6 text-sm text-muted-foreground">No machine usage records yet.</p> : null}
+          {!isRecordsLoading && !records.length ? <p className="py-6 text-sm text-muted-foreground">Belum ada data pemakaian mesin.</p> : null}
         </CardContent>
       </Card>
     </div>

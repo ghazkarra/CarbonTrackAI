@@ -1,7 +1,8 @@
-import { FiArrowRight as ArrowRight, FiEye as Eye, FiEyeOff as EyeOff, FiGrid as Leaf, FiLoader as LoaderCircle, FiLock as LockKeyhole, FiMail as Mail, FiShield as ShieldCheck } from 'react-icons/fi'
+import { FiArrowRight as ArrowRight, FiEye as Eye, FiEyeOff as EyeOff, FiLoader as LoaderCircle, FiLock as LockKeyhole, FiMail as Mail, FiShield as ShieldCheck } from 'react-icons/fi'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { BrandMark } from '@/components/layout/brand-mark'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -55,9 +56,7 @@ export function LoginPage() {
 
           <div className="relative z-10 flex w-full flex-col">
             <Link to="/" className="login-rise group inline-flex w-fit items-center gap-3 rounded-[8px] text-white outline-none transition focus-visible:ring-3 focus-visible:ring-emerald-300/50">
-              <span className="flex size-10 items-center justify-center rounded-[8px] bg-emerald-500 text-[#083318] shadow-lg shadow-emerald-950/25 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
-                <Leaf className="size-5" />
-              </span>
+              <BrandMark className="shadow-lg shadow-emerald-950/25 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105" />
               <span className="text-xl font-bold">CarbonTrackAI</span>
             </Link>
 

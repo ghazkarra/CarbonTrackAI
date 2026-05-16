@@ -12,6 +12,24 @@ import type { Recommendation } from '@/features/recommendations/types'
 import { apiRequest } from '@/lib/api'
 import { getStoredToken } from '@/lib/auth'
 
+function translateRecommendationStatus(status: string) {
+  const normalized = status.toLowerCase()
+  if (normalized === 'completed') return 'Selesai'
+  if (normalized === 'active') return 'Aktif'
+  if (normalized === 'dismissed') return 'Diabaikan'
+
+  return status
+}
+
+function translatePriority(priority: string) {
+  const normalized = priority.toLowerCase()
+  if (normalized === 'high') return 'Tinggi'
+  if (normalized === 'medium') return 'Sedang'
+  if (normalized === 'low') return 'Rendah'
+
+  return priority
+}
+
 export function RecommendationsPage() {
   const token = getStoredToken()
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
@@ -36,7 +54,7 @@ export function RecommendationsPage() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       loadRecommendations().catch(() => {
-        setError('Failed to load recommendations')
+        setError('Gagal memuat rekomendasi')
         setIsLoading(false)
       })
     }, 0)
@@ -55,10 +73,10 @@ export function RecommendationsPage() {
         token,
         body: JSON.stringify({ report_month: reportMonth }),
       })
-      setMessage(`Generated ${data.length} recommendations.`)
+      setMessage(`${data.length} rekomendasi berhasil dibuat.`)
       await loadRecommendations()
     } catch (generateError) {
-      setError(generateError instanceof Error ? generateError.message : 'Failed to generate recommendations')
+      setError(generateError instanceof Error ? generateError.message : 'Gagal membuat rekomendasi')
     } finally {
       setIsGenerating(false)
     }
@@ -77,7 +95,7 @@ export function RecommendationsPage() {
       await loadRecommendations()
       setPendingCompletion(null)
     } catch (completeError) {
-      setError(completeError instanceof Error ? completeError.message : 'Failed to complete recommendation')
+      setError(completeError instanceof Error ? completeError.message : 'Gagal menyelesaikan rekomendasi')
     } finally {
       setCompletingId(null)
     }
@@ -97,13 +115,13 @@ export function RecommendationsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Recommendations</Badge>
-          <h1 className="text-3xl font-semibold tracking-tight">Emission reduction actions</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Generate rule-based recommendations and mark actions as completed.</p>
+          <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Rekomendasi</Badge>
+          <h1 className="text-4xl font-semibold tracking-tight">Aksi pengurangan emisi</h1>
+          <p className="mt-3 text-base text-muted-foreground">Buat rekomendasi berbasis aturan dan tandai aksi yang sudah selesai.</p>
         </div>
         <div className="flex gap-2">
-          <MonthPicker value={reportMonth} onChange={setReportMonth} className="w-40" ariaLabel="Report month" />
-          <LoadingButton onClick={generateRecommendations} isLoading={isGenerating}>Generate</LoadingButton>
+          <MonthPicker value={reportMonth} onChange={setReportMonth} className="w-40" ariaLabel="Bulan laporan" />
+          <LoadingButton onClick={generateRecommendations} isLoading={isGenerating}>Buat</LoadingButton>
         </div>
       </div>
 
@@ -112,9 +130,9 @@ export function RecommendationsPage() {
 
       <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)} className="gap-3">
         <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="not-completed">Not completed</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
+          <TabsTrigger value="all">Semua</TabsTrigger>
+          <TabsTrigger value="not-completed">Belum selesai</TabsTrigger>
+          <TabsTrigger value="completed">Selesai</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -131,18 +149,18 @@ export function RecommendationsPage() {
               <AccordionTrigger className="hover:no-underline">
                 <div className="min-w-0 pr-4">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{recommendation.priority}</Badge>
-                    <Badge className="bg-primary/10 text-primary hover:bg-primary/15">{recommendation.status}</Badge>
+                    <Badge variant="outline">{translatePriority(recommendation.priority)}</Badge>
+                    <Badge className="bg-primary/10 text-primary hover:bg-primary/15">{translateRecommendationStatus(recommendation.status)}</Badge>
                   </div>
-                  <p className="truncate text-base font-semibold">{recommendation.recommendation_title}</p>
-                  <p className="mt-1 truncate text-sm text-muted-foreground">{recommendation.related_machine_name ?? 'General recommendation'}</p>
+                  <p className="truncate text-lg font-semibold">{recommendation.recommendation_title}</p>
+                  <p className="mt-1 truncate text-base text-muted-foreground">{recommendation.related_machine_name ?? 'Rekomendasi umum'}</p>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">{recommendation.recommendation_description}</p>
+                <p className="text-base text-muted-foreground">{recommendation.recommendation_description}</p>
                 <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
                   <Input
-                    placeholder="Optional completion note"
+                    placeholder="Catatan penyelesaian opsional"
                     value={completionNotes[recommendation.id] ?? recommendation.completion_note ?? ''}
                     disabled={recommendation.is_completed || completingId === recommendation.id}
                     onChange={(event) => setCompletionNotes({ ...completionNotes, [recommendation.id]: event.target.value })}
@@ -153,7 +171,7 @@ export function RecommendationsPage() {
                     isLoading={completingId === recommendation.id}
                     onClick={() => setPendingCompletion(recommendation)}
                   >
-                    {recommendation.is_completed ? 'Completed' : 'Mark completed'}
+                    {recommendation.is_completed ? 'Selesai' : 'Tandai selesai'}
                   </LoadingButton>
                 </div>
               </AccordionContent>
@@ -161,13 +179,13 @@ export function RecommendationsPage() {
           ))}
         </Accordion>
       ) : (
-        <Card><CardContent className="py-8 text-sm text-muted-foreground">No recommendations match this filter.</CardContent></Card>
+        <Card><CardContent className="py-8 text-base text-muted-foreground">Tidak ada rekomendasi untuk filter ini.</CardContent></Card>
       )}
       <ConfirmDialog
         open={Boolean(pendingCompletion)}
-        title="Mark recommendation completed?"
-        description="This will move the recommendation into the completed state and save the current completion note."
-        confirmLabel="Mark completed"
+        title="Tandai rekomendasi selesai?"
+        description="Rekomendasi akan dipindahkan ke status selesai dan catatan saat ini akan disimpan."
+        confirmLabel="Tandai selesai"
         isLoading={pendingCompletion ? completingId === pendingCompletion.id : false}
         onOpenChange={(open) => {
           if (!open) setPendingCompletion(null)

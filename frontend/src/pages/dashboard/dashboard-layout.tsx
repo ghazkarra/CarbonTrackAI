@@ -11,7 +11,7 @@ export function DashboardLayout() {
   const role = getStoredUser()?.role
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
+    <div className="dashboard-shell min-h-svh bg-background text-foreground">
       <RouteProgress />
       <div className="flex min-h-svh">
         <AppSidebar
@@ -27,7 +27,7 @@ export function DashboardLayout() {
           <DashboardHeader
             role={role}
           />
-          <main className="flex w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+          <main className="dashboard-content flex w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
             <Outlet />
           </main>
         </div>

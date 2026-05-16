@@ -36,7 +36,7 @@ export function SuperadminDatasetsPage() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       loadHealth().catch(() => {
-        setError('Failed to load ChromaDB health')
+        setError('Gagal memuat status ChromaDB')
         setIsHealthLoading(false)
       })
     }, 0)
@@ -56,7 +56,7 @@ export function SuperadminDatasetsPage() {
       setIngestResult(result)
       await loadHealth()
     } catch (ingestError) {
-      setError(ingestError instanceof Error ? ingestError.message : 'Dataset ingest failed')
+      setError(ingestError instanceof Error ? ingestError.message : 'Gagal melakukan ingest dataset')
     } finally {
       setIsLoading(false)
     }
@@ -66,8 +66,8 @@ export function SuperadminDatasetsPage() {
     <div className="space-y-6">
       <div>
         <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Superadmin</Badge>
-        <h1 className="text-3xl font-semibold tracking-tight">Dataset and RAG management</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Ingest reference datasets into ChromaDB and monitor vector collection health.</p>
+        <h1 className="text-4xl font-semibold tracking-tight">Manajemen dataset dan RAG</h1>
+        <p className="mt-3 text-base text-muted-foreground">Masukkan dataset referensi ke ChromaDB dan pantau kesehatan koleksi vektor.</p>
       </div>
 
       {error ? <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
@@ -75,31 +75,31 @@ export function SuperadminDatasetsPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Database className="size-5 text-primary" /> ChromaDB Health</CardTitle>
-            <CardDescription>Current collection status for `emission_knowledge_base`.</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-xl"><Database className="size-6 text-primary" /> Kesehatan ChromaDB</CardTitle>
+            <CardDescription className="text-base">Status koleksi saat ini untuk `emission_knowledge_base`.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-md border p-4">
-              <p className="text-sm text-muted-foreground">Collection</p>
-              {isHealthLoading ? <Skeleton className="mt-2 h-5 w-48" /> : <p className="mt-1 font-medium">{health?.collection ?? '-'}</p>}
+              <p className="text-base text-muted-foreground">Koleksi</p>
+              {isHealthLoading ? <Skeleton className="mt-2 h-5 w-48" /> : <p className="mt-1 text-base font-medium">{health?.collection ?? '-'}</p>}
             </div>
             <div className="rounded-md border p-4">
-              <p className="text-sm text-muted-foreground">Document count</p>
-              {isHealthLoading ? <Skeleton className="mt-2 h-8 w-20" /> : <p className="mt-1 text-2xl font-semibold text-primary">{health?.count ?? 0}</p>}
+              <p className="text-base text-muted-foreground">Jumlah dokumen</p>
+              {isHealthLoading ? <Skeleton className="mt-2 h-8 w-20" /> : <p className="mt-1 text-3xl font-semibold text-primary">{health?.count ?? 0}</p>}
             </div>
-            <LoadingButton variant="outline" isLoading={isHealthLoading} onClick={() => loadHealth()}>
-              <RefreshCw className="size-4" /> Refresh Health
+            <LoadingButton variant="outline" className="min-w-52 px-6" isLoading={isHealthLoading} onClick={() => loadHealth()}>
+              <RefreshCw className="size-4" /> Perbarui status
             </LoadingButton>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Dataset Ingestion</CardTitle>
-            <CardDescription>Load the five blueprint CSV datasets into ChromaDB.</CardDescription>
+            <CardTitle className="text-xl">Ingest dataset</CardTitle>
+            <CardDescription className="text-base">Muat lima dataset CSV blueprint ke ChromaDB.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <LoadingButton onClick={ingestDatasets} isLoading={isLoading}>Ingest datasets</LoadingButton>
+            <LoadingButton onClick={ingestDatasets} isLoading={isLoading}>Ingest dataset</LoadingButton>
             {ingestResult ? (
               <div className="space-y-2 rounded-md border p-4 text-sm">
                 <p className="font-medium">Status: {ingestResult.status}</p>

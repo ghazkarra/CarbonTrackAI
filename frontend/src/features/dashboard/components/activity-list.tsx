@@ -3,18 +3,18 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const activities = [
-  { name: 'Jakarta HQ', detail: 'Scope 2 report approved', status: 'Verified', initials: 'JH' },
-  { name: 'Supplier batch 42', detail: 'Emission factor mapping needed', status: 'Review', initials: 'S4' },
-  { name: 'Bandung Plant', detail: 'Energy usage down 9.1%', status: 'Improved', initials: 'BP' },
-  { name: 'Audit team', detail: 'Quarterly evidence uploaded', status: 'New', initials: 'AT' },
+  { name: 'Kantor Jakarta', detail: 'Laporan Scope 2 disetujui', status: 'Terverifikasi', initials: 'KJ' },
+  { name: 'Batch pemasok 42', detail: 'Pemetaan faktor emisi perlu ditinjau', status: 'Review', initials: 'BP' },
+  { name: 'Pabrik Bandung', detail: 'Pemakaian energi turun 9,1%', status: 'Membaik', initials: 'PB' },
+  { name: 'Tim audit', detail: 'Bukti kuartalan sudah diunggah', status: 'Baru', initials: 'TA' },
 ] as const
 
 export function ActivityList() {
   return (
     <Card className="border-border/70 shadow-sm">
       <CardHeader>
-        <CardTitle>Recent activity</CardTitle>
-        <CardDescription>Latest admin events across reporting workflow.</CardDescription>
+        <CardTitle>Aktivitas terbaru</CardTitle>
+        <CardDescription>Peristiwa admin terbaru di alur pelaporan.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {activities.map((activity) => (

@@ -7,6 +7,24 @@ from app.models.system_config import SystemConfig
 from app.models.user import User
 
 
+def normalize_user_role(role: str | None) -> str:
+    normalized = (role or "").strip().lower()
+
+    if normalized == "superadmin" or normalized == "admin":
+        return "superadmin"
+
+    return "operator"
+
+
+def normalize_existing_user_roles(db: Session) -> None:
+    users = db.query(User).all()
+
+    for user in users:
+        next_role = normalize_user_role(user.role)
+        if user.role != next_role:
+            user.role = next_role
+
+
 def seed_database(db: Session) -> None:
     settings = get_settings()
     company = db.query(Company).filter(Company.company_name == "PT HERBATECH INNOPHARMA INDUSTRY").first()
@@ -22,6 +40,8 @@ def seed_database(db: Session) -> None:
     superadmin = db.query(User).filter(User.email == "admin@carboncore.ai").first()
     if superadmin is None:
         db.add(User(name="CarbonCore Admin", email="admin@carboncore.ai", password_hash=hash_password("password"), role="superadmin"))
+
+    normalize_existing_user_roles(db)
 
     ef_config = db.query(SystemConfig).filter(SystemConfig.config_key == "DEFAULT_ELECTRICITY_EF_KGCO2E_PER_KWH").first()
     if ef_config is None:

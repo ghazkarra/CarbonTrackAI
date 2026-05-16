@@ -1,5 +1,6 @@
-import { FiAlertTriangle, FiCheckSquare, FiClipboard, FiColumns, FiDatabase, FiFeather, FiFileText, FiGrid, FiLogOut, FiUsers } from 'react-icons/fi'
+import { FiAlertTriangle, FiCheckSquare, FiClipboard, FiColumns, FiDatabase, FiFileText, FiGrid, FiLogOut, FiUsers } from 'react-icons/fi'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { BrandMark } from '@/components/layout/brand-mark'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
@@ -14,16 +15,16 @@ type NavItem = {
 }
 
 const operatorNavItems: NavItem[] = [
-  { label: 'Overview', href: '/dashboard', icon: FiGrid, end: true },
-  { label: 'Machine Usage', href: '/dashboard/machine-usage', icon: FiClipboard },
-  { label: 'Recommendations', href: '/dashboard/recommendations', icon: FiCheckSquare },
-  { label: 'Alerts', href: '/dashboard/alerts', icon: FiAlertTriangle },
-  { label: 'Reports', href: '/dashboard/reports', icon: FiFileText },
+  { label: 'Ringkasan', href: '/dashboard', icon: FiGrid, end: true },
+  { label: 'Pemakaian Mesin', href: '/dashboard/machine-usage', icon: FiClipboard },
+  { label: 'Rekomendasi', href: '/dashboard/recommendations', icon: FiCheckSquare },
+  { label: 'Peringatan', href: '/dashboard/alerts', icon: FiAlertTriangle },
+  { label: 'Laporan', href: '/dashboard/reports', icon: FiFileText },
 ]
 
 const superadminNavItems: NavItem[] = [
-  { label: 'Users', href: '/dashboard/superadmin', icon: FiUsers, end: true, activePaths: ['/dashboard/superadmin/users'] },
-  { label: 'Datasets', href: '/dashboard/superadmin/datasets', icon: FiDatabase },
+  { label: 'Pengguna', href: '/dashboard/superadmin', icon: FiUsers, end: true, activePaths: ['/dashboard/superadmin/users'] },
+  { label: 'Dataset', href: '/dashboard/superadmin/datasets', icon: FiDatabase },
 ]
 
 type AppSidebarProps = {
@@ -54,19 +55,17 @@ export function AppSidebar({ className, role, onToggleSidebar, isCollapsed = fal
   return (
     <aside className={cn('flex h-full flex-col border-r bg-sidebar py-5', isCollapsed ? 'px-3' : 'px-4', className)}>
       <div className={cn('flex items-center gap-3', isCollapsed ? 'justify-center px-0' : 'px-2')}>
-        <div className={cn('flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm shadow-primary/30', isCollapsed && 'hidden')}>
-          <FiFeather className="size-5" />
-        </div>
+        <BrandMark className={cn('shrink-0 shadow-sm shadow-primary/30', isCollapsed && 'hidden')} />
         <div className={cn('min-w-0 flex-1', isCollapsed && 'hidden')}>
           <p className="font-semibold tracking-tight">CarbonTrackAI</p>
-          <p className="text-xs text-muted-foreground">{effectiveRole === 'superadmin' ? 'Superadmin Console' : 'Admin Console'}</p>
+          <p className="text-xs text-muted-foreground">{effectiveRole === 'superadmin' ? 'Konsol Superadmin' : 'Konsol Admin'}</p>
         </div>
         {onToggleSidebar ? (
           <button
             type="button"
             className="hidden size-10 shrink-0 place-items-center rounded-md text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground lg:grid"
             onClick={onToggleSidebar}
-            aria-label={isCollapsed ? 'Open sidebar' : 'Close sidebar'}
+            aria-label={isCollapsed ? 'Buka sidebar' : 'Tutup sidebar'}
           >
             <FiColumns className="size-5" />
           </button>
@@ -82,7 +81,7 @@ export function AppSidebar({ className, role, onToggleSidebar, isCollapsed = fal
             to={item.href}
             title={isCollapsed ? item.label : undefined}
             className={cn(
-              'flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              'dashboard-nav-item flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
               isCollapsed && 'justify-center px-0',
               isActive && 'bg-primary/10 text-primary shadow-inner shadow-primary/5'
             )}
@@ -117,7 +116,7 @@ export function AppSidebar({ className, role, onToggleSidebar, isCollapsed = fal
           <DropdownMenuContent side="top" align="end" className="w-48">
             <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
               <FiLogOut className="size-4" />
-              Logout
+              Keluar
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

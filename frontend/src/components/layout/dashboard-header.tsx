@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import type { UserRole } from '@/lib/auth'
 import { AppSidebar } from './app-sidebar'
+import { LiveTimestamp } from './live-timestamp'
 
 type DashboardHeaderProps = {
   role?: UserRole
@@ -15,7 +16,7 @@ export function DashboardHeader({ role }: DashboardHeaderProps) {
       <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="lg:hidden" aria-label="Open navigation">
+            <Button variant="outline" size="icon" className="lg:hidden" aria-label="Buka navigasi">
               <FiColumns className="size-4" />
             </Button>
           </SheetTrigger>
@@ -24,6 +25,7 @@ export function DashboardHeader({ role }: DashboardHeaderProps) {
           </SheetContent>
         </Sheet>
         <div className="ml-auto flex items-center gap-2">
+          <LiveTimestamp />
           <ThemeToggle />
         </div>
       </div>

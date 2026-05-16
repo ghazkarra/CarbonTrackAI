@@ -28,7 +28,7 @@ export function ConfirmDialog({ open, title, description, confirmLabel, isLoadin
           <Dialog.Description className="mt-2 text-sm text-muted-foreground">{description}</Dialog.Description>
           <div className="mt-5 flex justify-end gap-2">
             <Dialog.Close asChild>
-              <Button variant="outline" disabled={isLoading}>Cancel</Button>
+              <Button variant="outline" disabled={isLoading}>Batal</Button>
             </Dialog.Close>
             <LoadingButton isLoading={isLoading} onClick={onConfirm}>{confirmLabel}</LoadingButton>
           </div>

@@ -8,6 +8,13 @@ import type { ReportFile } from '@/features/reports/types'
 import { apiRequest } from '@/lib/api'
 import { getStoredToken } from '@/lib/auth'
 
+const reportTypeLabels: Record<ReportFile['report_type'], string> = {
+  daily: 'Harian',
+  weekly: 'Mingguan',
+  monthly: 'Bulanan',
+  annual: 'Tahunan',
+}
+
 export function ReportsPage() {
   const token = getStoredToken()
   const [reports, setReports] = useState<ReportFile[]>([])
@@ -31,7 +38,7 @@ export function ReportsPage() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       loadReports().catch(() => {
-        setError('Failed to load reports')
+        setError('Gagal memuat laporan')
         setIsLoading(false)
       })
     }, 0)
@@ -50,10 +57,10 @@ export function ReportsPage() {
         token,
         body: JSON.stringify({ report_type: reportType, period_start: periodStart, period_end: periodEnd }),
       })
-      setMessage(`${report.report_type} PDF generated.`)
+      setMessage(`PDF laporan ${reportTypeLabels[report.report_type].toLowerCase()} berhasil dibuat.`)
       await loadReports()
     } catch (reportError) {
-      setError(reportError instanceof Error ? reportError.message : 'Failed to generate report')
+      setError(reportError instanceof Error ? reportError.message : 'Gagal membuat laporan')
     } finally {
       setIsGenerating(false)
     }
@@ -68,7 +75,7 @@ export function ReportsPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!response.ok) {
-        setError('Failed to open report')
+        setError('Gagal membuka laporan')
         return
       }
       const blob = await response.blob()
@@ -82,26 +89,26 @@ export function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Reports</Badge>
-        <h1 className="text-3xl font-semibold tracking-tight">PDF reporting</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Generate daily, weekly, monthly, and annual PDF reports.</p>
+        <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Laporan</Badge>
+        <h1 className="text-4xl font-semibold tracking-tight">Pelaporan PDF</h1>
+        <p className="mt-3 text-base text-muted-foreground">Buat laporan PDF harian, mingguan, bulanan, dan tahunan.</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Generate report</CardTitle>
-          <CardDescription>Monthly and annual reports include completed recommendations.</CardDescription>
+          <CardTitle className="text-xl">Buat laporan</CardTitle>
+          <CardDescription className="text-base">Laporan bulanan dan tahunan menyertakan rekomendasi yang sudah selesai.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-[160px_1fr_1fr_auto]">
-          <select className="h-10 cursor-pointer rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" value={reportType} onChange={(event) => setReportType(event.target.value as ReportFile['report_type'])}>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="annual">Annual</option>
+          <select className="h-11 cursor-pointer rounded-lg border border-input bg-background px-3 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" value={reportType} onChange={(event) => setReportType(event.target.value as ReportFile['report_type'])}>
+            <option value="daily">Harian</option>
+            <option value="weekly">Mingguan</option>
+            <option value="monthly">Bulanan</option>
+            <option value="annual">Tahunan</option>
           </select>
-          <DatePicker value={periodStart} onChange={setPeriodStart} ariaLabel="Period start" className="w-full" />
-          <DatePicker value={periodEnd} onChange={setPeriodEnd} ariaLabel="Period end" className="w-full" />
-          <LoadingButton onClick={generateReport} isLoading={isGenerating}>Generate PDF</LoadingButton>
+          <DatePicker value={periodStart} onChange={setPeriodStart} ariaLabel="Awal periode" className="w-full" />
+          <DatePicker value={periodEnd} onChange={setPeriodEnd} ariaLabel="Akhir periode" className="w-full" />
+          <LoadingButton onClick={generateReport} isLoading={isGenerating}>Buat PDF</LoadingButton>
         </CardContent>
       </Card>
 
@@ -110,8 +117,8 @@ export function ReportsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Report history</CardTitle>
-          <CardDescription>Generated PDF files available for preview or download.</CardDescription>
+          <CardTitle className="text-xl">Riwayat laporan</CardTitle>
+          <CardDescription className="text-base">File PDF yang sudah dibuat dapat dipratinjau atau diunduh.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {isLoading ? Array.from({ length: 4 }).map((_, index) => (
@@ -129,21 +136,21 @@ export function ReportsPage() {
           )) : reports.map((report) => (
             <div key={report.id} className="flex flex-col gap-3 rounded-md border p-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="font-medium capitalize">{report.report_type} report</p>
-                <p className="text-sm text-muted-foreground">{report.period_start} to {report.period_end}</p>
-                <p className="text-xs text-muted-foreground">Completed recommendations: {report.include_completed_recommendations ? 'included' : 'excluded'}</p>
+                <p className="text-lg font-medium">Laporan {reportTypeLabels[report.report_type].toLowerCase()}</p>
+                <p className="text-base text-muted-foreground">{report.period_start} sampai {report.period_end}</p>
+                <p className="text-sm text-muted-foreground">Rekomendasi selesai: {report.include_completed_recommendations ? 'disertakan' : 'tidak disertakan'}</p>
               </div>
               <div className="flex gap-2">
                 <LoadingButton variant="outline" isLoading={openingReport?.id === report.id && openingReport.mode === 'preview'} onClick={() => openReport(report, 'preview')}>
-                  Preview
+                  Pratinjau
                 </LoadingButton>
                 <LoadingButton isLoading={openingReport?.id === report.id && openingReport.mode === 'download'} onClick={() => openReport(report, 'download')}>
-                  Download
+                  Unduh
                 </LoadingButton>
               </div>
             </div>
           ))}
-          {!isLoading && !reports.length ? <p className="text-sm text-muted-foreground">No reports generated yet.</p> : null}
+          {!isLoading && !reports.length ? <p className="text-base text-muted-foreground">Belum ada laporan yang dibuat.</p> : null}
         </CardContent>
       </Card>
     </div>

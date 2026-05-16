@@ -27,8 +27,8 @@ function formatDateValue(date: Date) {
 
 function formatDisplayDate(value: string) {
   const date = parseDate(value)
-  if (!date) return 'Select date'
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date)
+  if (!date) return 'Pilih tanggal'
+  return new Intl.DateTimeFormat('id-ID', { month: 'short', day: 'numeric', year: 'numeric' }).format(date)
 }
 
 export function DatePicker({ value, onChange, ariaLabel, className }: DatePickerProps) {
@@ -65,7 +65,7 @@ type MonthPickerProps = {
   className?: string
 }
 
-const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 
 function parseMonth(value: string) {
   const [year, month] = value.split('-').map(Number)
@@ -92,16 +92,16 @@ export function MonthPicker({ value, onChange, ariaLabel, className }: MonthPick
       <PopoverTrigger asChild>
         <Button variant="outline" className={cn('justify-start font-normal', className)} aria-label={ariaLabel}>
           <CalendarIcon className="size-4 text-muted-foreground" />
-          {new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(new Date(year, month - 1, 1))}
+          {new Intl.DateTimeFormat('id-ID', { month: 'short', year: 'numeric' }).format(new Date(year, month - 1, 1))}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-72" align="end">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => setViewYear((current) => current - 1)} aria-label="Previous year">
+          <Button variant="ghost" size="icon" onClick={() => setViewYear((current) => current - 1)} aria-label="Tahun sebelumnya">
             <ChevronLeft className="size-4" />
           </Button>
           <p className="font-medium">{viewYear}</p>
-          <Button variant="ghost" size="icon" onClick={() => setViewYear((current) => current + 1)} aria-label="Next year">
+          <Button variant="ghost" size="icon" onClick={() => setViewYear((current) => current + 1)} aria-label="Tahun berikutnya">
             <ChevronRight className="size-4" />
           </Button>
         </div>

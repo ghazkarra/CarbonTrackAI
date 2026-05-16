@@ -44,7 +44,7 @@ export function ThemeToggle() {
 
   return (
     <>
-      <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${nextTheme} mode`} className={cn(phase && 'opacity-0')}>
+      <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={nextTheme === 'dark' ? 'Ubah ke mode gelap' : 'Ubah ke mode terang'} className={cn('dashboard-theme-toggle', phase && 'opacity-0')}>
         <Icon className="size-4" />
       </Button>
       {phase ? createPortal(

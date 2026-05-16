@@ -17,6 +17,19 @@ const severityClass: Record<Alert['severity'], string> = {
   critical: 'border-red-300 text-red-700',
 }
 
+function translateSeverity(severity: Alert['severity']) {
+  if (severity === 'info') return 'Info'
+  if (severity === 'warning') return 'Peringatan'
+  if (severity === 'high') return 'Tinggi'
+  if (severity === 'critical') return 'Kritis'
+
+  return severity
+}
+
+function translateAlertStatus(status: string) {
+  return status === 'acknowledged' ? 'Ditindaklanjuti' : 'Belum ditindaklanjuti'
+}
+
 export function AlertsPage() {
   const token = getStoredToken()
   const [alerts, setAlerts] = useState<Alert[]>([])
@@ -37,7 +50,7 @@ export function AlertsPage() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       loadAlerts().catch(() => {
-        setError('Failed to load alerts')
+        setError('Gagal memuat peringatan')
         setIsLoading(false)
       })
     }, 0)
@@ -54,7 +67,7 @@ export function AlertsPage() {
       await loadAlerts()
       setPendingAcknowledge(null)
     } catch (ackError) {
-      setError(ackError instanceof Error ? ackError.message : 'Failed to acknowledge alert')
+      setError(ackError instanceof Error ? ackError.message : 'Gagal menindaklanjuti peringatan')
     } finally {
       setAcknowledgingId(null)
     }
@@ -73,18 +86,18 @@ export function AlertsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Alerts</Badge>
-        <h1 className="text-3xl font-semibold tracking-tight">Operational risk alerts</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Automatic alerts for high energy usage, missing data, and formula mismatch.</p>
+        <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Peringatan</Badge>
+        <h1 className="text-4xl font-semibold tracking-tight">Peringatan risiko operasional</h1>
+        <p className="mt-3 text-base text-muted-foreground">Peringatan otomatis untuk pemakaian energi tinggi, data kosong, dan ketidaksesuaian rumus.</p>
       </div>
 
       {error ? <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
 
       <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)} className="gap-3">
         <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="unacknowledged">Unacknowledged</TabsTrigger>
-          <TabsTrigger value="acknowledged">Acknowledged</TabsTrigger>
+          <TabsTrigger value="all">Semua</TabsTrigger>
+          <TabsTrigger value="unacknowledged">Belum ditindaklanjuti</TabsTrigger>
+          <TabsTrigger value="acknowledged">Ditindaklanjuti</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -101,34 +114,34 @@ export function AlertsPage() {
               <AccordionTrigger className="hover:no-underline">
                 <div className="min-w-0 pr-4">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className={severityClass[alert.severity]}>{alert.severity}</Badge>
-                    <Badge variant="outline">{alert.status}</Badge>
+                    <Badge variant="outline" className={severityClass[alert.severity]}>{translateSeverity(alert.severity)}</Badge>
+                    <Badge variant="outline">{translateAlertStatus(alert.status)}</Badge>
                   </div>
-                  <p className="truncate text-base font-semibold">{alert.alert_type}</p>
-                  <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">{alert.message}</p>
+                  <p className="truncate text-lg font-semibold">{alert.alert_type}</p>
+                  <p className="mt-1 line-clamp-1 text-base text-muted-foreground">{alert.message}</p>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-                <div className="grid gap-2 text-sm text-muted-foreground">
-                  <p><span className="text-foreground">Triggered:</span> {alert.triggered_value ?? '-'}</p>
-                  <p><span className="text-foreground">Threshold:</span> {alert.threshold_value ?? '-'}</p>
-                  <p><span className="text-foreground">Action:</span> {alert.recommended_action ?? '-'}</p>
+                <div className="grid gap-2 text-base text-muted-foreground">
+                  <p><span className="text-foreground">Nilai terpicu:</span> {alert.triggered_value ?? '-'}</p>
+                  <p><span className="text-foreground">Ambang batas:</span> {alert.threshold_value ?? '-'}</p>
+                  <p><span className="text-foreground">Aksi:</span> {alert.recommended_action ?? '-'}</p>
                 </div>
                 <LoadingButton variant="outline" disabled={alert.status === 'acknowledged'} isLoading={acknowledgingId === alert.id} onClick={() => setPendingAcknowledge(alert)}>
-                  {alert.status === 'acknowledged' ? 'Acknowledged' : 'Acknowledge'}
+                  {alert.status === 'acknowledged' ? 'Ditindaklanjuti' : 'Tindak lanjuti'}
                 </LoadingButton>
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
       ) : (
-        <Card><CardContent className="py-8 text-sm text-muted-foreground">No alerts match this filter.</CardContent></Card>
+        <Card><CardContent className="py-8 text-base text-muted-foreground">Tidak ada peringatan untuk filter ini.</CardContent></Card>
       )}
       <ConfirmDialog
         open={Boolean(pendingAcknowledge)}
-        title="Acknowledge this alert?"
-        description="This will mark the alert as acknowledged and move it below active alerts."
-        confirmLabel="Acknowledge"
+        title="Tindak lanjuti peringatan ini?"
+        description="Peringatan akan ditandai selesai ditindaklanjuti dan dipindahkan dari daftar aktif."
+        confirmLabel="Tindak lanjuti"
         isLoading={pendingAcknowledge ? acknowledgingId === pendingAcknowledge.id : false}
         onOpenChange={(open) => {
           if (!open) setPendingAcknowledge(null)

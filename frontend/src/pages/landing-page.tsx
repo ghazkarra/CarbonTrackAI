@@ -5,7 +5,6 @@ import {
   FiChevronRight as ChevronRight,
   FiClipboard as ClipboardCheck,
   FiCpu as Factory,
-  FiGrid as Building2,
   FiHeart as Heart,
   FiMail as Mail,
   FiMapPin as MapPin,
@@ -18,12 +17,14 @@ import {
   FiZap as PlugZap,
 } from 'react-icons/fi'
 import type { IconType } from 'react-icons'
+import { Building2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, MouseEvent, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { BrandMark } from '@/components/layout/brand-mark'
 import { cn } from '@/lib/utils'
 
 const heroImage =
@@ -181,9 +182,7 @@ export function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-white/20 bg-white/85 backdrop-blur-xl">
         <div className="flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-10 xl:px-14">
           <Link to="/" className="group flex items-center gap-3 font-bold">
-            <span className="flex size-10 items-center justify-center rounded-[8px] bg-emerald-600 text-white transition-transform group-hover:-rotate-6 group-hover:scale-105">
-              <Building2 className="size-5" />
-            </span>
+            <BrandMark className="transition-transform group-hover:-rotate-6 group-hover:scale-105" />
             <span className="text-lg font-black sm:text-xl">CarbonTrackAI</span>
           </Link>
           <nav className="hidden items-center gap-8 text-base font-bold text-slate-600 md:flex lg:text-lg">
@@ -236,9 +235,7 @@ export function LandingPage() {
               <div className="absolute left-10 top-14 size-72 rounded-full border border-white/20 bg-white/8 backdrop-blur-md landing-pulse-ring" />
               <div className="absolute right-4 top-40 size-48 rounded-full border border-emerald-300/30 bg-emerald-300/10 backdrop-blur landing-float-soft" />
               <div className="absolute bottom-12 left-20 size-40 rounded-full border border-white/20 bg-white/10 backdrop-blur landing-float-slower" />
-              <div className="absolute left-1/2 top-1/2 grid size-28 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-emerald-400 text-[#062515] shadow-[0_0_70px_rgba(52,211,153,0.45)]">
-                <Building2 className="size-11" />
-              </div>
+              <BrandMark className="absolute left-1/2 top-1/2 size-28 -translate-x-1/2 -translate-y-1/2 rounded-[30px] bg-emerald-400 text-[#062515] shadow-[0_0_70px_rgba(52,211,153,0.45)]" iconClassName="size-16" />
             </div>
           </div>
         </section>
@@ -517,9 +514,7 @@ export function LandingPage() {
         <div className="grid w-full gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-10 xl:px-14">
           <div>
             <Link to="/" className="flex w-fit items-center gap-3 text-xl font-black">
-              <span className="grid size-12 place-items-center rounded-[8px] bg-emerald-400 text-[#062515]">
-                <Building2 className="size-6" />
-              </span>
+              <BrandMark className="size-12 rounded-[20px]" iconClassName="size-7" />
               CarbonTrackAI
             </Link>
             <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-50/78">
