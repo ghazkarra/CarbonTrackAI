@@ -22,6 +22,7 @@ const defaultSummary: DashboardSummary = {
   active_alerts_count: 0,
   completed_recommendations_this_month: 0,
   top_machines: [],
+  emission_trend: [],
   recommendation_progress: { active: 0, completed: 0, dismissed: 0 },
 }
 
@@ -125,13 +126,13 @@ export function OverviewPage() {
       </section>
 
       <section className="grid items-start gap-4 xl:grid-cols-4">
-        <Card className="flex min-h-[420px] flex-col border-border/70 shadow-sm xl:col-span-3">
+        <Card className="border-border/70 shadow-sm xl:col-span-3">
           <CardHeader>
             <CardTitle className="text-xl">Tren emisi</CardTitle>
-            <CardDescription className="text-base">Output tCO2e bulanan dibandingkan target reduksi.</CardDescription>
+            <CardDescription className="text-base">Output CO2e bulanan berdasarkan data pemakaian mesin.</CardDescription>
           </CardHeader>
-          <CardContent className="min-h-0 flex-1">
-            <EmissionsChart />
+          <CardContent>
+            <EmissionsChart data={summary.emission_trend} />
           </CardContent>
         </Card>
         <TopAlertCard alert={topAlert} isLoading={isLoading} />

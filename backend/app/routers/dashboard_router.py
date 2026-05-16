@@ -11,7 +11,7 @@ from app.models.emission_calculation import EmissionCalculation
 from app.models.machine_usage import MachineUsageRecord
 from app.models.recommendation import Recommendation
 from app.models.user import User
-from app.schemas.dashboard_schema import DashboardSummary, TopMachine
+from app.schemas.dashboard_schema import DashboardSummary, EmissionTrendPoint, TopMachine
 
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -45,6 +45,37 @@ def dashboard_summary(period_month: str | None = None, current_user: User = Depe
         top_rows = top_rows.filter(MachineUsageRecord.report_month == period_month)
     top_rows = top_rows.group_by(MachineUsageRecord.machine_name, MachineUsageRecord.machine_location).order_by(func.sum(MachineUsageRecord.energy_kwh).desc()).limit(10).all()
 
+    actual_trend_rows = (
+        db.query(
+            MachineUsageRecord.report_month,
+            func.coalesce(func.sum(EmissionCalculation.estimated_co2e_kg), 0).label("estimated_co2e_kg"),
+        )
+        .outerjoin(EmissionCalculation, EmissionCalculation.machine_usage_id == MachineUsageRecord.id)
+        .filter(MachineUsageRecord.company_id == current_user.company_id)
+        .group_by(MachineUsageRecord.report_month)
+        .order_by(MachineUsageRecord.report_month.desc())
+        .limit(12)
+        .all()
+    )
+    trend_months = [row.report_month for row in actual_trend_rows]
+    reduction_by_month = {}
+    if trend_months:
+        reduction_rows = (
+            db.query(
+                MachineUsageRecord.report_month,
+                func.coalesce(func.sum(Recommendation.estimated_co2_reduction_kg), 0).label("completed_reduction_kg"),
+            )
+            .join(MachineUsageRecord, MachineUsageRecord.id == Recommendation.machine_usage_id)
+            .filter(
+                Recommendation.company_id == current_user.company_id,
+                Recommendation.status == "completed",
+                MachineUsageRecord.report_month.in_(trend_months),
+            )
+            .group_by(MachineUsageRecord.report_month)
+            .all()
+        )
+        reduction_by_month = {row.report_month: Decimal(row.completed_reduction_kg or 0) for row in reduction_rows}
+
     active_alerts_count = db.query(Alert).filter(Alert.company_id == current_user.company_id, Alert.status == "active").count()
     completed_query = db.query(Recommendation).filter(Recommendation.company_id == current_user.company_id, Recommendation.status == "completed")
     if period_month:
@@ -59,5 +90,14 @@ def dashboard_summary(period_month: str | None = None, current_user: User = Depe
         active_alerts_count=active_alerts_count,
         completed_recommendations_this_month=completed_count,
         top_machines=[TopMachine(machine_name=row.machine_name, machine_location=row.machine_location, energy_kwh=row.energy_kwh, estimated_co2e_kg=row.estimated_co2e_kg) for row in top_rows],
+        emission_trend=[
+            EmissionTrendPoint(
+                month=row.report_month,
+                actual_co2e_kg=Decimal(row.estimated_co2e_kg or 0),
+                completed_reduction_kg=reduction_by_month.get(row.report_month, Decimal("0")),
+                net_co2e_kg=max(Decimal(row.estimated_co2e_kg or 0) - reduction_by_month.get(row.report_month, Decimal("0")), Decimal("0")),
+            )
+            for row in reversed(actual_trend_rows)
+        ],
         recommendation_progress={"active": active_recommendations, "completed": completed_count, "dismissed": 0},
     )

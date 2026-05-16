@@ -10,6 +10,12 @@ export type DashboardSummary = {
     energy_kwh: string
     estimated_co2e_kg: string
   }>
+  emission_trend: Array<{
+    month: string
+    actual_co2e_kg: string
+    completed_reduction_kg: string
+    net_co2e_kg: string
+  }>
   recommendation_progress: {
     active: number
     completed: number
