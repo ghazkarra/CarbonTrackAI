@@ -28,6 +28,13 @@ function formatNumber(value: string | number, fractionDigits = 2) {
   return Number(value).toLocaleString('id-ID', { maximumFractionDigits: fractionDigits })
 }
 
+function getMachineProgressColor(value: number, maxValue: number) {
+  const ratio = maxValue > 0 ? value / maxValue : 0
+  if (ratio >= 0.75) return 'bg-red-500'
+  if (ratio >= 0.35) return 'bg-yellow-400'
+  return 'bg-emerald-500'
+}
+
 export function OverviewPage() {
   const [summary, setSummary] = useState<DashboardSummary>(defaultSummary)
   const [alertsOverview, setAlertsOverview] = useState<AlertsOverview | null>(null)
@@ -85,6 +92,8 @@ export function OverviewPage() {
   ]
 
   const topAlert = useMemo(() => pickTopAlert(alertsOverview?.alerts ?? []), [alertsOverview])
+  const topMachines = summary.top_machines.slice(0, 5)
+  const maxTopMachineEnergy = Math.max(0, ...topMachines.map((machine) => Number(machine.energy_kwh)))
   const recommendationTotal = summary.recommendation_progress.active + summary.recommendation_progress.completed + summary.recommendation_progress.dismissed
   const completionRate = recommendationTotal ? Math.round((summary.recommendation_progress.completed / recommendationTotal) * 100) : 0
 
@@ -135,31 +144,45 @@ export function OverviewPage() {
           </CardHeader>
           <CardContent className="grid gap-3">
             {isLoading ? Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="flex items-center justify-between gap-3 rounded-md border p-3">
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Skeleton className="h-4 w-40" />
-                  <Skeleton className="h-3 w-28" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="ml-auto h-4 w-20" />
-                  <Skeleton className="ml-auto h-3 w-24" />
-                </div>
-              </div>
-            )) : summary.top_machines.length ? summary.top_machines.slice(0, 5).map((machine, index) => (
-              <div key={`${machine.machine_name}-${machine.machine_location}`} className="flex items-center justify-between gap-3 rounded-md border p-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary/10 text-sm font-semibold text-primary">{index + 1}</span>
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-medium">{machine.machine_name}</p>
-                    <p className="text-sm text-muted-foreground">{machine.machine_location}</p>
+              <div key={index} className="space-y-3 rounded-md border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-28" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="ml-auto h-4 w-20" />
+                    <Skeleton className="ml-auto h-3 w-24" />
                   </div>
                 </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-base font-semibold text-primary">{formatNumber(machine.energy_kwh)} kWh</p>
-                  <p className="text-sm text-muted-foreground">{formatNumber(machine.estimated_co2e_kg)} kg CO2e</p>
-                </div>
+                <Skeleton className="h-2 w-full rounded-full" />
               </div>
-            )) : <p className="text-base text-muted-foreground">Belum ada data pemakaian mesin.</p>}
+            )) : topMachines.length ? topMachines.map((machine, index) => {
+              const energyKwh = Number(machine.energy_kwh)
+              const progressRatio = maxTopMachineEnergy > 0 ? energyKwh / maxTopMachineEnergy : 0
+              const progressWidth = progressRatio > 0 ? Math.max(5, Math.round(progressRatio * 100)) : 0
+
+              return (
+                <div key={`${machine.machine_name}-${machine.machine_location}`} className="space-y-3 rounded-md border p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary/10 text-sm font-semibold text-primary">{index + 1}</span>
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-medium">{machine.machine_name}</p>
+                        <p className="text-sm text-muted-foreground">{machine.machine_location}</p>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-base font-semibold text-primary">{formatNumber(machine.energy_kwh)} kWh</p>
+                      <p className="text-sm text-muted-foreground">{formatNumber(machine.estimated_co2e_kg)} kg CO2e</p>
+                    </div>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div className={`h-full rounded-full ${getMachineProgressColor(energyKwh, maxTopMachineEnergy)}`} style={{ width: `${progressWidth}%` }} />
+                  </div>
+                </div>
+              )
+            }) : <p className="text-base text-muted-foreground">Belum ada data pemakaian mesin.</p>}
           </CardContent>
         </Card>
 

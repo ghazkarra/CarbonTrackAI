@@ -124,11 +124,11 @@ export function MachineUsagePage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Pemakaian Mesin</Badge>
-          <h1 className="text-4xl font-semibold tracking-tight">Data pemakaian mesin</h1>
+          <h1 className="text-4xl font-semibold tracking-tight">Data Pemakaian Mesin</h1>
           <p className="mt-3 text-base text-muted-foreground">Konteks perusahaan: {user?.company_name ?? 'Perusahaan tidak diketahui'}</p>
         </div>
         <Button asChild size="lg">
-          <Link to="/dashboard/machine-usage/new"><Plus className="size-4" /> Tambah machine usage</Link>
+          <Link to="/dashboard/machine-usage/new"><Plus className="size-4" /> Tambah pemakaian mesin</Link>
         </Button>
       </div>
 
@@ -137,7 +137,7 @@ export function MachineUsagePage() {
       <Card>
         <CardHeader className="gap-4">
           <div>
-            <CardTitle className="text-xl">Data table pemakaian</CardTitle>
+            <CardTitle className="text-xl">Data tabel pemakaian</CardTitle>
             <CardDescription className="text-base">{filteredRecords.length} record ditampilkan, total {numberFormatter.format(totalEnergy)} kWh.</CardDescription>
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_1fr_auto]">
