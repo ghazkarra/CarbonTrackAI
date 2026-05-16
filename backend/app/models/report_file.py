@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -20,3 +20,4 @@ class ReportFile(Base):
     include_completed_recommendations: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[str] = mapped_column(String(50), default="generated")
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    preview_data_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)

@@ -1,0 +1,8 @@
+# ChromaDB local persistence
+backend/chroma_db/
+backend/chroma_db/**/*.bin
+
+# Local secrets
+backend/.env
+backend/.env.*
+!backend/.env.example

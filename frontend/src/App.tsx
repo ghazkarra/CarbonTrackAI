@@ -3,6 +3,9 @@ import { ProtectedRoute } from '@/components/auth/protected-route'
 import { DashboardLayout } from '@/pages/dashboard/dashboard-layout'
 import { AlertsPage } from '@/pages/dashboard/alerts-page'
 import { OverviewPage } from '@/pages/dashboard/overview-page'
+import { ReportCreatePage } from '@/pages/dashboard/report-create-page'
+import { ReportPrintPage } from '@/pages/dashboard/report-print-page'
+import { ReportPreviewPage } from '@/pages/dashboard/report-preview-page'
 import { ReportsPage } from '@/pages/dashboard/reports-page'
 import { LandingPage } from '@/pages/landing-page'
 import { LoginPage } from '@/pages/login-page'
@@ -22,6 +25,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route element={<ProtectedRoute role="operator" />}>
+        <Route path="/dashboard/reports/:reportId/print" element={<ReportPrintPage />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<OverviewPage />} />
           <Route path="machine-usage" element={<MachineUsagePage />} />
@@ -31,6 +35,8 @@ function App() {
           <Route path="recommendations" element={<Navigate to="/dashboard/alerts" replace />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="reports" element={<ReportsPage />} />
+          <Route path="reports/create" element={<ReportCreatePage />} />
+          <Route path="reports/:reportId/preview" element={<ReportPreviewPage />} />
           <Route path="emissions" element={<Navigate to="/dashboard" replace />} />
           <Route path="facilities" element={<Navigate to="/dashboard" replace />} />
           <Route path="settings" element={<Navigate to="/dashboard" replace />} />

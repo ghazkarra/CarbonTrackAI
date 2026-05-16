@@ -1,13 +1,4 @@
-from pathlib import Path
-
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy.orm import Session
-
-from app.config import get_settings
 from app.models.alert import Alert
 from app.models.emission_calculation import EmissionCalculation
 from app.models.machine_usage import MachineUsageRecord
@@ -26,17 +17,12 @@ PRIORITY_LABELS = {"critical": "Kritis", "high": "Tinggi", "medium": "Sedang", "
 def generate_pdf_report(db: Session, current_user: User, report_type: str, period_start, period_end) -> ReportFile:
     normalized_type = report_type.lower()
     include_completed = normalized_type in REPORT_TYPES_WITH_COMPLETED
-    output_dir = Path(get_settings().pdf_output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    file_name = f"carboncore_{current_user.company_id}_{normalized_type}_{period_start}_{period_end}.pdf"
-    file_path = output_dir / file_name
-
     report = ReportFile(
         company_id=current_user.company_id,
         report_type=normalized_type,
         period_start=period_start,
         period_end=period_end,
-        file_path=str(file_path),
+        file_path=None,
         generated_by=current_user.id,
         include_completed_recommendations=include_completed,
         status="generated",
@@ -44,6 +30,14 @@ def generate_pdf_report(db: Session, current_user: User, report_type: str, perio
     db.add(report)
     db.flush()
 
+    report.preview_data_json = build_report_payload(db, current_user, normalized_type, period_start, period_end, report.id)
+    db.commit()
+    db.refresh(report)
+    return report
+
+
+def build_report_payload(db: Session, current_user: User, report_type: str, period_start, period_end, report_id: int | None = None) -> dict:
+    include_completed = report_type in REPORT_TYPES_WITH_COMPLETED
     start_month = period_start.strftime("%Y-%m")
     end_month = period_end.strftime("%Y-%m")
     records = (
@@ -58,8 +52,9 @@ def generate_pdf_report(db: Session, current_user: User, report_type: str, perio
     )
     usage_ids = [record.id for record in records]
     calculations = db.query(EmissionCalculation).filter(EmissionCalculation.machine_usage_id.in_(usage_ids)).all() if usage_ids else []
+    co2e_by_usage_id = {calc.machine_usage_id: float(calc.estimated_co2e_kg) for calc in calculations}
     total_energy = sum(float(record.energy_kwh) for record in records)
-    total_co2e = sum(float(calc.estimated_co2e_kg) for calc in calculations)
+    total_co2e = sum(co2e_by_usage_id.values())
     alerts = db.query(Alert).filter(Alert.company_id == current_user.company_id, Alert.machine_usage_id.in_(usage_ids)).all() if usage_ids else []
     active_recommendations = db.query(Recommendation).filter(Recommendation.company_id == current_user.company_id, Recommendation.status == "active", Recommendation.machine_usage_id.in_(usage_ids)).all() if usage_ids else []
     completed_recommendations = []
@@ -70,40 +65,182 @@ def generate_pdf_report(db: Session, current_user: User, report_type: str, perio
             .all()
         )
 
+    included_recommendations = active_recommendations + completed_recommendations
     source_context_ids = sorted({context_id for calc in calculations for context_id in (calc.context_ids_json or [])})
+    validation_status_counts = count_by(records, lambda record: record.validation_status or "unknown")
+    data_source_counts = count_by(records, lambda record: record.data_source or "unknown")
+    alert_severity_counts = count_by(alerts, lambda alert: alert.severity or "unknown")
+    alert_type_counts = count_by(alerts, lambda alert: alert.alert_type or "unknown")
+    alert_status_counts = count_by(alerts, lambda alert: alert.status or "unknown")
+    recommendation_priority_counts = count_by(included_recommendations, lambda recommendation: recommendation.priority or "unknown")
+    recommendation_category_counts = count_by(included_recommendations, lambda recommendation: recommendation.category or "unknown")
+    recommendation_status_counts = count_by(included_recommendations, lambda recommendation: recommendation.status or "unknown")
+    saving_kwh_by_priority = sum_by(included_recommendations, lambda recommendation: recommendation.priority or "unknown", lambda recommendation: recommendation.estimated_saving_kwh)
+    saving_idr_by_priority = sum_by(included_recommendations, lambda recommendation: recommendation.priority or "unknown", lambda recommendation: recommendation.estimated_saving_idr)
+    energy_by_source = sum_by(records, lambda record: record.data_source or "unknown", lambda record: record.energy_kwh)
+    records_by_source = count_by(records, lambda record: record.data_source or "unknown")
     report_data = {
-        "company_name": current_user.company.company_name if current_user.company else "Perusahaan",
-        "report_type": normalized_type,
+        "company_name": current_user.company.company_name if current_user.company else "Company",
+        "report_type": report_type,
         "period_start": str(period_start),
         "period_end": str(period_end),
         "total_energy_kwh": total_energy,
         "estimated_co2e_kg": total_co2e,
+        "estimated_co2e_ton": total_co2e / 1000,
         "records_count": len(records),
         "active_alerts_count": len(alerts),
         "active_recommendations_count": len(active_recommendations),
         "completed_recommendations_count": len(completed_recommendations),
+        "total_usage_hours": sum(float(record.usage_hours) for record in records),
+        "total_power_kw": sum(float(record.machine_power_kw) for record in records),
+        "validation_status_counts": validation_status_counts,
+        "data_source_counts": data_source_counts,
+        "alert_severity_counts": alert_severity_counts,
+        "alert_type_counts": alert_type_counts,
+        "alert_status_counts": alert_status_counts,
+        "recommendation_priority_counts": recommendation_priority_counts,
+        "recommendation_category_counts": recommendation_category_counts,
+        "recommendation_status_counts": recommendation_status_counts,
+        "total_estimated_saving_kwh": sum(float(recommendation.estimated_saving_kwh or 0) for recommendation in included_recommendations),
+        "total_estimated_saving_idr": sum(float(recommendation.estimated_saving_idr or 0) for recommendation in included_recommendations),
+        "total_estimated_co2_reduction_kg": sum(float(recommendation.estimated_co2_reduction_kg or 0) for recommendation in included_recommendations),
         "source_context_ids": source_context_ids,
     }
-    summary = generate_report_summary_with_llm(normalized_type, report_data) or fallback_summary(report_data)
+    summary = normalize_summary(generate_report_summary_with_llm(report_type, report_data) or fallback_summary(report_data))
+    top_records = records[:10]
 
-    render_pdf(
-        file_path=file_path,
-        company_name=current_user.company.company_name if current_user.company else "Perusahaan",
-        report_type=normalized_type,
-        period_start=str(period_start),
-        period_end=str(period_end),
-        total_energy=total_energy,
-        total_co2e=total_co2e,
-        records=records[:10],
-        alerts=alerts[:10],
-        active_recommendations=active_recommendations[:10],
-        completed_recommendations=completed_recommendations[:10],
-        source_context_ids=source_context_ids[:12],
-        summary=summary,
-    )
-    db.commit()
-    db.refresh(report)
-    return report
+    return {
+        "metadata": {
+            "id": report_id,
+            "company_name": report_data["company_name"],
+            "report_type": report_type,
+            "period_start": str(period_start),
+            "period_end": str(period_end),
+            "period_label": f"{period_start} sampai {period_end}",
+            "include_completed_recommendations": include_completed,
+        },
+        "metrics": report_data,
+        "highlights": [
+            {"label": "Total Energy", "value": round(total_energy, 2), "unit": "kWh", "description": "Konsumsi energi dalam periode laporan"},
+            {"label": "Estimated CO2e", "value": round(total_co2e, 2), "unit": "kg", "description": "Estimasi emisi karbon"},
+            {"label": "Usage Records", "value": len(records), "unit": "record", "description": "Data operasional dianalisis"},
+            {"label": "Active Alerts", "value": len(alerts), "unit": "alert", "description": "Isu aktif yang perlu ditindaklanjuti"},
+            {"label": "Active Recommendations", "value": len(active_recommendations), "unit": "rekomendasi", "description": "Peluang penghematan aktif"},
+            {"label": "Completed Recommendations", "value": len(completed_recommendations), "unit": "rekomendasi", "description": "Rekomendasi selesai dalam laporan"},
+        ],
+        "charts": {
+            "emission_trend": monthly_trend(records, co2e_by_usage_id),
+            "top_machines": [
+                {"label": record.machine_name, "value": round(float(record.energy_kwh), 2), "secondary_value": round(co2e_by_usage_id.get(record.id, 0), 2)}
+                for record in top_records[:6]
+            ],
+            "machine_energy_by_source": [
+                {"label": format_label(label), "value": round(value, 2), "secondary_value": float(records_by_source.get(label, 0))}
+                for label, value in sorted(energy_by_source.items(), key=lambda item: item[1], reverse=True)
+            ],
+            "machine_validation_status": chart_points_from_counts(validation_status_counts),
+            "alert_severity_breakdown": chart_points_from_counts(alert_severity_counts),
+            "alert_type_breakdown": chart_points_from_counts(alert_type_counts),
+            "recommendation_status_breakdown": chart_points_from_counts(recommendation_status_counts),
+            "recommendation_savings_by_priority": [
+                {"label": format_label(label), "value": round(value, 2), "secondary_value": round(saving_idr_by_priority.get(label, 0), 2)}
+                for label, value in sorted(saving_kwh_by_priority.items(), key=lambda item: item[1], reverse=True)
+            ],
+        },
+        "summary": summary,
+        "tables": {
+            "machine_usage": [machine_usage_row(record, co2e_by_usage_id.get(record.id, 0)) for record in top_records],
+            "alerts": [alert_row(alert) for alert in alerts[:10]],
+            "active_recommendations": [recommendation_row(recommendation) for recommendation in active_recommendations[:10]],
+            "completed_recommendations": [recommendation_row(recommendation) for recommendation in completed_recommendations[:10]],
+            "source_context_ids": source_context_ids[:12],
+        },
+    }
+
+
+def count_by(items, key_fn) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for item in items:
+        key = str(key_fn(item) or "unknown")
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
+def sum_by(items, key_fn, value_fn) -> dict[str, float]:
+    totals: dict[str, float] = {}
+    for item in items:
+        key = str(key_fn(item) or "unknown")
+        totals[key] = totals.get(key, 0) + float(value_fn(item) or 0)
+    return totals
+
+
+def chart_points_from_counts(counts: dict[str, int]) -> list[dict]:
+    return [{"label": format_label(label), "value": float(value), "secondary_value": None} for label, value in sorted(counts.items(), key=lambda item: item[1], reverse=True)]
+
+
+def format_label(value: str) -> str:
+    return value.replace("_", " ").title()
+
+
+def monthly_trend(records, co2e_by_usage_id: dict[int, float]) -> list[dict]:
+    by_month: dict[str, dict[str, float]] = {}
+    for record in records:
+        bucket = by_month.setdefault(record.report_month, {"value": 0, "secondary_value": 0})
+        bucket["value"] += co2e_by_usage_id.get(record.id, 0)
+        bucket["secondary_value"] += float(record.energy_kwh)
+    return [
+        {"label": month, "value": round(values["value"], 2), "secondary_value": round(values["secondary_value"], 2)}
+        for month, values in sorted(by_month.items())
+    ]
+
+
+def machine_usage_row(record, co2e: float) -> dict:
+    return {
+        "machine": record.machine_name,
+        "location": record.machine_location,
+        "quantity": record.machine_quantity,
+        "power_kw": float(record.machine_power_kw),
+        "usage_hours": float(record.usage_hours),
+        "energy_kwh": float(record.energy_kwh),
+        "estimated_co2e_kg": round(co2e, 2),
+        "validation_status": record.validation_status,
+        "data_source": record.data_source,
+    }
+
+
+def alert_row(alert) -> dict:
+    return {
+        "severity": alert.severity,
+        "type": alert.alert_type,
+        "message": alert.message,
+        "recommended_action": alert.recommended_action or "-",
+        "status": alert.status,
+        "triggered_value": alert.triggered_value,
+        "threshold_value": alert.threshold_value,
+    }
+
+
+def recommendation_row(recommendation) -> dict:
+    return {
+        "priority": recommendation.priority,
+        "category": recommendation.category,
+        "title": recommendation.recommendation_title,
+        "recommendation_description": recommendation.recommendation_description,
+        "machine": recommendation.related_machine_name or "-",
+        "status": recommendation.status,
+        "completion_note": recommendation.completion_note or "-",
+        "estimated_saving_kwh": float(recommendation.estimated_saving_kwh or 0),
+        "estimated_saving_idr": float(recommendation.estimated_saving_idr or 0),
+        "estimated_co2_reduction_kg": float(recommendation.estimated_co2_reduction_kg or 0),
+    }
+
+
+def normalize_summary(summary: dict) -> dict:
+    return {
+        "executive_summary": str(summary.get("executive_summary") or "No summary available."),
+        "key_findings": [str(item) for item in (summary.get("key_findings") or [])],
+        "management_notes": [str(item) for item in (summary.get("management_notes") or [])],
+    }
 
 
 def fallback_summary(report_data: dict) -> dict:
@@ -121,123 +258,3 @@ def fallback_summary(report_data: dict) -> dict:
         "management_notes": ["Prioritaskan mesin dengan konsumsi energi tinggi dan selesaikan rekomendasi sebelum periode pelaporan berikutnya."],
     }
 
-
-def render_pdf(
-    file_path: Path,
-    company_name: str,
-    report_type: str,
-    period_start: str,
-    period_end: str,
-    total_energy: float,
-    total_co2e: float,
-    records,
-    alerts,
-    active_recommendations,
-    completed_recommendations,
-    source_context_ids: list[str],
-    summary: dict,
-) -> None:
-    doc = SimpleDocTemplate(str(file_path), pagesize=A4, rightMargin=14 * mm, leftMargin=14 * mm, topMargin=14 * mm, bottomMargin=14 * mm)
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle("CarbonTitle", parent=styles["Title"], textColor=colors.HexColor("#0f5132"), fontSize=20, leading=24)
-    heading_style = ParagraphStyle("CarbonHeading", parent=styles["Heading2"], textColor=colors.HexColor("#166534"), fontSize=13, leading=16, spaceBefore=10)
-    body_style = ParagraphStyle("CarbonBody", parent=styles["BodyText"], fontSize=9, leading=12)
-    small_style = ParagraphStyle("CarbonSmall", parent=styles["BodyText"], fontSize=8, leading=10, textColor=colors.HexColor("#475569"))
-
-    story = [
-        Paragraph("Laporan Emisi CarbonCore AI", title_style),
-        Paragraph(company_name, styles["Heading3"]),
-        Paragraph(f"Jenis laporan: {REPORT_TYPE_LABELS.get(report_type, report_type)} | Periode: {period_start} sampai {period_end}", small_style),
-        Spacer(1, 8),
-        metric_table(total_energy, total_co2e, len(alerts), len(active_recommendations), len(completed_recommendations)),
-        Spacer(1, 10),
-        Paragraph("Ringkasan Eksekutif", heading_style),
-        Paragraph(str(summary.get("executive_summary") or "Ringkasan belum tersedia."), body_style),
-    ]
-
-    key_findings = summary.get("key_findings") or []
-    if key_findings:
-        story.append(Paragraph("Temuan Utama", heading_style))
-        for finding in key_findings[:5]:
-            story.append(Paragraph(f"- {finding}", body_style))
-
-    story.extend([Paragraph("Pemakaian Mesin Tertinggi", heading_style), machine_table(records)])
-    story.extend([Paragraph("Peringatan Aktif", heading_style), alert_table(alerts)])
-    story.extend([Paragraph("Rekomendasi Aktif", heading_style), recommendation_table(active_recommendations, include_status=False)])
-
-    if report_type in REPORT_TYPES_WITH_COMPLETED:
-        story.extend([Paragraph("Rekomendasi Selesai", heading_style), recommendation_table(completed_recommendations, include_status=True)])
-    else:
-        story.append(Paragraph("Rekomendasi selesai tidak disertakan dalam laporan harian dan mingguan.", small_style))
-
-    story.append(Paragraph("Referensi Konteks Sumber", heading_style))
-    story.append(Paragraph(", ".join(source_context_ids) if source_context_ids else "Tidak ada ID konteks ChromaDB yang terlampir pada periode laporan ini.", small_style))
-    doc.build(story)
-
-
-def metric_table(total_energy: float, total_co2e: float, alerts_count: int, active_recommendations_count: int, completed_recommendations_count: int) -> Table:
-    table = Table(
-        [
-            ["Total Energi", "Estimasi CO2e", "Peringatan Aktif", "Rekom. Aktif", "Rekom. Selesai"],
-            [f"{total_energy:,.2f} kWh", f"{total_co2e:,.2f} kg", str(alerts_count), str(active_recommendations_count), str(completed_recommendations_count)],
-        ],
-        colWidths=[35 * mm, 35 * mm, 28 * mm, 28 * mm, 32 * mm],
-    )
-    table.setStyle(base_table_style(header_bg="#dcfce7"))
-    return table
-
-
-def machine_table(records) -> Table:
-    data = [["Mesin", "Lokasi", "Jumlah", "kW", "Jam", "kWh"]]
-    for record in records:
-        data.append([record.machine_name, record.machine_location, str(record.machine_quantity), str(record.machine_power_kw), str(record.usage_hours), str(record.energy_kwh)])
-    if len(data) == 1:
-        data.append(["Tidak ada data", "-", "-", "-", "-", "-"])
-    table = Table(data, colWidths=[42 * mm, 30 * mm, 15 * mm, 24 * mm, 24 * mm, 28 * mm])
-    table.setStyle(base_table_style())
-    return table
-
-
-def alert_table(alerts) -> Table:
-    data = [["Risiko", "Jenis", "Pesan", "Aksi"]]
-    for alert in alerts:
-        data.append([SEVERITY_LABELS.get(alert.severity, alert.severity), alert.alert_type, alert.message, alert.recommended_action or "-"])
-    if len(data) == 1:
-        data.append(["-", "Tidak ada peringatan", "-", "-"])
-    table = Table(data, colWidths=[22 * mm, 34 * mm, 62 * mm, 48 * mm])
-    table.setStyle(base_table_style(header_bg="#fee2e2"))
-    return table
-
-
-def recommendation_table(recommendations, include_status: bool) -> Table:
-    headers = ["Prioritas", "Judul", "Mesin", "Status"] if include_status else ["Prioritas", "Judul", "Mesin"]
-    data = [headers]
-    for recommendation in recommendations:
-        row = [PRIORITY_LABELS.get(recommendation.priority, recommendation.priority), recommendation.recommendation_title, recommendation.related_machine_name or "-"]
-        if include_status:
-            row.append(recommendation.completion_note or "Selesai")
-        data.append(row)
-    if len(data) == 1:
-        data.append(["-", "Tidak ada rekomendasi", "-"] + (["-"] if include_status else []))
-    widths = [24 * mm, 78 * mm, 38 * mm, 28 * mm] if include_status else [24 * mm, 90 * mm, 48 * mm]
-    table = Table(data, colWidths=widths)
-    table.setStyle(base_table_style(header_bg="#e0f2fe"))
-    return table
-
-
-def base_table_style(header_bg: str = "#f1f5f9") -> TableStyle:
-    return TableStyle(
-        [
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(header_bg)),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0f172a")),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 7),
-            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cbd5e1")),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
-            ("LEFTPADDING", (0, 0), (-1, -1), 4),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ]
-    )
