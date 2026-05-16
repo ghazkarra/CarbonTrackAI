@@ -1,6 +1,9 @@
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel
+
+from app.schemas.recommendation_schema import RecommendationResponse
 
 
 class AlertResponse(BaseModel):
@@ -18,3 +21,33 @@ class AlertResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class AlertMachineUsageResponse(BaseModel):
+    id: int
+    report_month: str
+    machine_name: str
+    machine_location: str
+    energy_kwh: Decimal
+
+    model_config = {"from_attributes": True}
+
+
+class SavingsSummaryResponse(BaseModel):
+    total_potential_saving_idr: Decimal
+    total_saving_kwh: Decimal
+    total_co2_reduction_kg: Decimal
+    tariff_code: str
+    tariff_per_kwh_idr: Decimal
+
+
+class AlertWithRecommendationsResponse(AlertResponse):
+    machine_usage: AlertMachineUsageResponse | None = None
+    recommendations: list[RecommendationResponse] = []
+
+    model_config = {"from_attributes": True}
+
+
+class AlertsOverviewResponse(BaseModel):
+    summary: SavingsSummaryResponse
+    alerts: list[AlertWithRecommendationsResponse]

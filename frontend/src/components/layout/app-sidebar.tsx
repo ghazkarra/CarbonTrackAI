@@ -1,4 +1,4 @@
-import { FiAlertTriangle, FiCheckSquare, FiClipboard, FiColumns, FiDatabase, FiFileText, FiGrid, FiLogOut, FiUsers } from 'react-icons/fi'
+import { FiAlertTriangle, FiClipboard, FiColumns, FiDatabase, FiFileText, FiGrid, FiLogOut, FiUsers } from 'react-icons/fi'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -17,8 +17,7 @@ type NavItem = {
 const operatorNavItems: NavItem[] = [
   { label: 'Ringkasan', href: '/dashboard', icon: FiGrid, end: true },
   { label: 'Pemakaian Mesin', href: '/dashboard/machine-usage', icon: FiClipboard },
-  { label: 'Rekomendasi', href: '/dashboard/recommendations', icon: FiCheckSquare },
-  { label: 'Peringatan', href: '/dashboard/alerts', icon: FiAlertTriangle },
+  { label: 'Alerts & Recommendations', href: '/dashboard/alerts', icon: FiAlertTriangle, activePaths: ['/dashboard/recommendations'] },
   { label: 'Laporan', href: '/dashboard/reports', icon: FiFileText },
 ]
 

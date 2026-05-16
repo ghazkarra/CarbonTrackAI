@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 import json
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from typing import Any
 
-from openai import OpenAI
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
 
 from app.config import get_settings
 
 
-def get_llm_client() -> OpenAI | None:
+def get_llm_client() -> Any | None:
     settings = get_settings()
-    if not settings.llm_api_key:
+    if OpenAI is None or not settings.llm_api_key:
         return None
     return OpenAI(base_url=settings.llm_base_url, api_key=settings.llm_api_key, timeout=settings.llm_timeout_seconds)
 
@@ -33,7 +38,7 @@ def call_llm_json(prompt: str) -> dict[str, Any] | None:
         executor.shutdown(wait=False, cancel_futures=True)
 
 
-def _call_llm_json_sync(client: OpenAI, model: str, prompt: str) -> dict[str, Any] | None:
+def _call_llm_json_sync(client: Any, model: str, prompt: str) -> dict[str, Any] | None:
     try:
         completion = client.chat.completions.create(
             model=model,

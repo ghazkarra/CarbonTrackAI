@@ -5,10 +5,13 @@ from io import StringIO
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.models.alert import Alert
+from app.models.emission_calculation import EmissionCalculation
 from app.models.machine_usage import MachineUsageBatch, MachineUsageRecord
 from app.models.import_log import ImportLog
+from app.models.recommendation import Recommendation
 from app.models.user import User
-from app.schemas.machine_usage_schema import ImportCsvResponse, ImportRowResult, MachineUsageCreate
+from app.schemas.machine_usage_schema import ImportCsvResponse, ImportRowResult, MachineUsageCreate, MachineUsageUpdate
 from app.services.alert_service import generate_alerts_for_usage
 from app.services.calculation_service import (
     attach_retrieved_context,
@@ -18,6 +21,7 @@ from app.services.calculation_service import (
     create_emission_calculation,
 )
 from app.services.rag_retrieval_service import retrieve_machine_context
+from app.services.savings_service import build_savings_summary
 
 
 EXPECTED_CSV_HEADER = [
@@ -70,6 +74,133 @@ def create_machine_usage(db: Session, payload: MachineUsageCreate, current_user:
     db.commit()
     db.refresh(record)
     return record
+
+
+def update_machine_usage(db: Session, usage_id: int, payload: MachineUsageUpdate, current_user: User) -> MachineUsageRecord | None:
+    record = db.get(MachineUsageRecord, usage_id)
+    if record is None or record.company_id != current_user.company_id:
+        return None
+
+    values = payload.model_dump(exclude_unset=True)
+    report_month = values.get("report_month", record.report_month)
+    row_no = values.get("row_no", record.row_no)
+    machine_name = values.get("machine_name", record.machine_name)
+    machine_location = values.get("machine_location", record.machine_location)
+    machine_quantity = values.get("machine_quantity", record.machine_quantity)
+    machine_power_watt = values.get("machine_power_watt", record.machine_power_watt)
+    usage_hours = values.get("usage_hours", record.usage_hours)
+
+    calculated_kw = calculate_machine_power_kw(machine_power_watt)
+    machine_power_kw = values.get("machine_power_kw", calculated_kw)
+    calculated_kwh = calculate_energy_kwh(machine_quantity, machine_power_kw, usage_hours)
+    energy_kwh = values.get("energy_kwh", calculated_kwh)
+    warnings = [
+        build_formula_warning("machine_power_kw", values.get("machine_power_kw"), calculated_kw),
+        build_formula_warning("energy_kwh", values.get("energy_kwh"), calculated_kwh),
+    ]
+    warning_text = "; ".join([warning for warning in warnings if warning]) or None
+
+    delete_usage_alerts_and_recommendations(db, record.id)
+    record.report_month = report_month
+    record.row_no = row_no
+    record.machine_name = machine_name
+    record.machine_location = machine_location
+    record.machine_quantity = machine_quantity
+    record.machine_power_watt = machine_power_watt
+    record.machine_power_kw = machine_power_kw
+    record.usage_hours = usage_hours
+    record.energy_kwh = energy_kwh
+    record.validation_status = "warning" if warning_text else "valid"
+    record.validation_message = warning_text
+    db.flush()
+
+    calculation = create_emission_calculation(db, record)
+    try:
+        attach_retrieved_context(calculation, retrieve_machine_context(record))
+    except Exception:
+        calculation.confidence_label = "medium"
+    generate_alerts_for_usage(db, record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def delete_machine_usage(db: Session, usage_id: int, current_user: User) -> dict | None:
+    record = db.get(MachineUsageRecord, usage_id)
+    if record is None or record.company_id != current_user.company_id:
+        return None
+    response = machine_usage_record_to_dict(record)
+    delete_usage_alerts_and_recommendations(db, record.id)
+    db.query(EmissionCalculation).filter(EmissionCalculation.machine_usage_id == record.id).delete(synchronize_session=False)
+    db.delete(record)
+    db.commit()
+    return response
+
+
+def delete_usage_alerts_and_recommendations(db: Session, usage_id: int) -> None:
+    alert_ids = [row.id for row in db.query(Alert.id).filter(Alert.machine_usage_id == usage_id).all()]
+    if alert_ids:
+        db.query(Recommendation).filter(Recommendation.alert_id.in_(alert_ids)).delete(synchronize_session=False)
+    db.query(Recommendation).filter(Recommendation.machine_usage_id == usage_id).delete(synchronize_session=False)
+    db.query(Alert).filter(Alert.machine_usage_id == usage_id).delete(synchronize_session=False)
+
+
+def get_machine_usage_detail(db: Session, usage_id: int, current_user: User) -> dict | None:
+    record = db.get(MachineUsageRecord, usage_id)
+    if record is None or record.company_id != current_user.company_id:
+        return None
+    return build_machine_usage_detail(db, record)
+
+
+def build_machine_usage_detail(db: Session, record: MachineUsageRecord) -> dict:
+    recommendations = (
+        db.query(Recommendation)
+        .filter(Recommendation.company_id == record.company_id, Recommendation.machine_usage_id == record.id)
+        .order_by(Recommendation.is_completed.asc(), Recommendation.created_at.desc())
+        .all()
+    )
+    alerts = (
+        db.query(Alert)
+        .filter(Alert.company_id == record.company_id, Alert.machine_usage_id == record.id)
+        .order_by(Alert.created_at.desc())
+        .all()
+    )
+    summary = build_savings_summary(recommendations)
+    estimated_co2e_kg = record.calculation.estimated_co2e_kg if record.calculation else 0
+    estimated_co2e_ton = record.calculation.estimated_co2e_ton if record.calculation else 0
+    return {
+        **machine_usage_record_to_dict(record),
+        "calculation": record.calculation,
+        "statistics": {
+            "total_energy_kwh": record.energy_kwh,
+            "estimated_co2e_kg": estimated_co2e_kg,
+            "estimated_co2e_ton": estimated_co2e_ton,
+            **summary,
+        },
+        "alerts": alerts,
+        "recommendations": recommendations,
+    }
+
+
+def machine_usage_record_to_dict(record: MachineUsageRecord) -> dict:
+    return {
+        "id": record.id,
+        "batch_id": record.batch_id,
+        "company_id": record.company_id,
+        "report_month": record.report_month,
+        "row_no": record.row_no,
+        "machine_name": record.machine_name,
+        "machine_location": record.machine_location,
+        "machine_quantity": record.machine_quantity,
+        "machine_power_watt": record.machine_power_watt,
+        "machine_power_kw": record.machine_power_kw,
+        "usage_hours": record.usage_hours,
+        "energy_kwh": record.energy_kwh,
+        "data_source": record.data_source,
+        "validation_status": record.validation_status,
+        "validation_message": record.validation_message,
+        "created_at": record.created_at,
+    }
 
 
 def parse_decimal(value: str | None, field_name: str, required: bool = True) -> Decimal | None:

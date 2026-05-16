@@ -3,6 +3,9 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.alert_schema import AlertResponse
+from app.schemas.recommendation_schema import RecommendationResponse
+
 
 class MachineUsageCreate(BaseModel):
     report_month: str = Field(pattern=r"^\d{4}-\d{2}$")
@@ -19,6 +22,23 @@ class MachineUsageCreate(BaseModel):
     @classmethod
     def strip_text(cls, value: str) -> str:
         return value.strip()
+
+
+class MachineUsageUpdate(BaseModel):
+    report_month: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}$")
+    row_no: int | None = None
+    machine_name: str | None = Field(default=None, min_length=1)
+    machine_location: str | None = Field(default=None, min_length=1)
+    machine_quantity: int | None = Field(default=None, gt=0)
+    machine_power_watt: Decimal | None = Field(default=None, ge=0)
+    machine_power_kw: Decimal | None = Field(default=None, ge=0)
+    usage_hours: Decimal | None = Field(default=None, ge=0)
+    energy_kwh: Decimal | None = Field(default=None, ge=0)
+
+    @field_validator("machine_name", "machine_location")
+    @classmethod
+    def strip_optional_text(cls, value: str | None) -> str | None:
+        return value.strip() if value is not None else None
 
 
 class MachineUsageResponse(BaseModel):
@@ -54,8 +74,22 @@ class EmissionCalculationResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MachineUsageStatisticsResponse(BaseModel):
+    total_energy_kwh: Decimal
+    estimated_co2e_kg: Decimal
+    estimated_co2e_ton: Decimal
+    total_potential_saving_idr: Decimal
+    total_saving_kwh: Decimal
+    total_co2_reduction_kg: Decimal
+    tariff_code: str
+    tariff_per_kwh_idr: Decimal
+
+
 class MachineUsageDetailResponse(MachineUsageResponse):
     calculation: EmissionCalculationResponse | None = None
+    statistics: MachineUsageStatisticsResponse
+    alerts: list[AlertResponse] = []
+    recommendations: list[RecommendationResponse] = []
 
 
 class ImportRowResult(BaseModel):

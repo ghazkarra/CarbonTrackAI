@@ -6,15 +6,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, SessionLocal, engine
 from app.models import *  # noqa: F403 - ensure SQLAlchemy models are registered
 from app.routers import alert_router, auth_router, dashboard_router, dataset_router, dev_router, machine_usage_router, recommendation_router, report_router, superadmin_user_router
+from app.services.database_compatibility_service import ensure_database_compatibility
+from app.services.recommendation_service import backfill_recommendation_links_and_savings
 from app.services.seed_service import seed_database
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_database_compatibility(engine)
     db = SessionLocal()
     try:
         seed_database(db)
+        backfill_recommendation_links_and_savings(db)
     finally:
         db.close()
     yield

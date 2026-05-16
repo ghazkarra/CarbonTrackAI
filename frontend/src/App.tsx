@@ -7,9 +7,10 @@ import { ReportsPage } from '@/pages/dashboard/reports-page'
 import { LandingPage } from '@/pages/landing-page'
 import { LoginPage } from '@/pages/login-page'
 import { MachineUsagePage } from '@/pages/dashboard/machine-usage-page'
+import { MachineUsageDetailPage } from '@/pages/dashboard/machine-usage-detail-page'
+import { MachineUsageFormPage } from '@/pages/dashboard/machine-usage-form-page'
 import { RegisterPage } from '@/pages/register-page'
 import { SuperadminDatasetsPage } from '@/pages/dashboard/superadmin-datasets-page'
-import { RecommendationsPage } from '@/pages/dashboard/recommendations-page'
 import { SuperadminPage } from '@/pages/dashboard/superadmin-page'
 import { SuperadminUserDetailPage } from '@/pages/dashboard/superadmin-user-detail-page'
 import './App.css'
@@ -24,7 +25,10 @@ function App() {
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<OverviewPage />} />
           <Route path="machine-usage" element={<MachineUsagePage />} />
-          <Route path="recommendations" element={<RecommendationsPage />} />
+          <Route path="machine-usage/new" element={<MachineUsageFormPage />} />
+          <Route path="machine-usage/:usageId" element={<MachineUsageDetailPage />} />
+          <Route path="machine-usage/:usageId/edit" element={<MachineUsageFormPage mode="edit" />} />
+          <Route path="recommendations" element={<Navigate to="/dashboard/alerts" replace />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="emissions" element={<Navigate to="/dashboard" replace />} />

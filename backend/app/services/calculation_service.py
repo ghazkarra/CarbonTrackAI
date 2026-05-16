@@ -38,18 +38,18 @@ def create_emission_calculation(db: Session, usage: MachineUsageRecord) -> Emiss
     factor = Decimal(str(settings.default_electricity_ef_kgco2e_per_kwh))
     estimated_kg = quantize(Decimal(usage.energy_kwh) * factor)
     estimated_ton = quantize(estimated_kg / Decimal("1000"), Decimal("0.000001"))
-    calculation = EmissionCalculation(
-        machine_usage_id=usage.id,
-        calculation_method="electric_machine",
-        emission_factor_value=factor,
-        emission_factor_unit="kgCO2e/kWh",
-        estimated_co2e_kg=estimated_kg,
-        estimated_co2e_ton=estimated_ton,
-        pollutant_estimates_json={},
-        context_ids_json=[],
-        confidence_label="medium",
-    )
-    db.add(calculation)
+    calculation = db.query(EmissionCalculation).filter(EmissionCalculation.machine_usage_id == usage.id).first()
+    if calculation is None:
+        calculation = EmissionCalculation(machine_usage_id=usage.id)
+        db.add(calculation)
+    calculation.calculation_method = "electric_machine"
+    calculation.emission_factor_value = factor
+    calculation.emission_factor_unit = "kgCO2e/kWh"
+    calculation.estimated_co2e_kg = estimated_kg
+    calculation.estimated_co2e_ton = estimated_ton
+    calculation.pollutant_estimates_json = {}
+    calculation.context_ids_json = []
+    calculation.confidence_label = "medium"
     db.flush()
     return calculation
 
