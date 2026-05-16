@@ -118,13 +118,13 @@ export function OverviewPage() {
 
       {error ? <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => (
           <MetricCard key={metric.title} {...metric} isLoading={isLoading} />
         ))}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-4">
+      <section className="grid items-start gap-4 xl:grid-cols-4">
         <Card className="flex min-h-[420px] flex-col border-border/70 shadow-sm xl:col-span-3">
           <CardHeader>
             <CardTitle className="text-xl">Tren emisi</CardTitle>
@@ -137,8 +137,8 @@ export function OverviewPage() {
         <TopAlertCard alert={topAlert} isLoading={isLoading} />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-2">
-        <Card className="border-border/70 shadow-sm">
+      <section className="grid items-start gap-4 xl:grid-cols-2">
+        <Card className="h-fit border-border/70 shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl">Mesin teratas</CardTitle>
             <CardDescription className="text-base">Konsumsi energi tertinggi pada periode terpilih.</CardDescription>
@@ -187,7 +187,7 @@ export function OverviewPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/70 shadow-sm">
+        <Card className="h-fit border-border/70 shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl">Progress rekomendasi</CardTitle>
             <CardDescription className="text-base">Ringkasan tindak lanjut rekomendasi untuk periode ini.</CardDescription>
@@ -240,7 +240,7 @@ function pickTopAlert(alerts: AlertWithRecommendations[]) {
 function TopAlertCard({ alert, isLoading }: { alert: AlertWithRecommendations | null; isLoading: boolean }) {
   if (isLoading) {
     return (
-      <Card className="border-border/70 shadow-sm">
+      <Card className="h-fit border-border/70 shadow-sm">
         <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
         <CardContent className="space-y-3">
           <Skeleton className="h-10 w-10" />
@@ -253,7 +253,7 @@ function TopAlertCard({ alert, isLoading }: { alert: AlertWithRecommendations | 
 
   if (!alert) {
     return (
-      <Card className="border-border/70 shadow-sm">
+      <Card className="h-fit border-border/70 shadow-sm">
         <CardHeader>
           <CardTitle className="text-xl">Alert teratas</CardTitle>
           <CardDescription className="text-base">Tidak ada alert pada periode ini.</CardDescription>
@@ -269,7 +269,7 @@ function TopAlertCard({ alert, isLoading }: { alert: AlertWithRecommendations | 
   const SeverityIcon = visual.icon
 
   return (
-    <Card className="border-border/70 shadow-sm">
+    <Card className="h-fit border-border/70 shadow-sm">
       <CardHeader>
         <CardTitle className="text-xl">Alert teratas</CardTitle>
         <CardDescription className="text-base">Prioritas tertinggi untuk ditinjau.</CardDescription>

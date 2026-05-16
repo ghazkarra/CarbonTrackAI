@@ -14,7 +14,7 @@ export function MetricCard({ title, value, change, tone, isLoading = false }: Me
   const Icon = tone === 'good' ? ArrowDownRight : ArrowUpRight
 
   return (
-    <Card className="overflow-hidden border-border/70 shadow-sm">
+    <Card className="h-fit overflow-hidden border-border/70 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         <div className="rounded-md bg-primary/10 p-2 text-primary">
