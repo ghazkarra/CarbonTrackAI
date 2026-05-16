@@ -4,8 +4,9 @@ import { EmissionsChart } from '@/features/dashboard/components/emissions-chart'
 import { MetricCard } from '@/features/dashboard/components/metric-card'
 import type { DashboardSummary } from '@/features/dashboard/types'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { MonthPicker } from '@/components/ui/date-picker'
+import { Skeleton } from '@/components/ui/skeleton'
 import { apiRequest } from '@/lib/api'
 import { getStoredToken } from '@/lib/auth'
 
@@ -30,15 +31,19 @@ export function OverviewPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const token = getStoredToken()
-    if (!token) return
+    const timer = window.setTimeout(() => {
+      const token = getStoredToken()
+      if (!token) return
 
-    setIsLoading(true)
-    setError(null)
-    apiRequest<DashboardSummary>(`/api/dashboard/summary?period_month=${periodMonth}`, { token })
-      .then(setSummary)
-      .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Failed to load dashboard'))
-      .finally(() => setIsLoading(false))
+      setIsLoading(true)
+      setError(null)
+      apiRequest<DashboardSummary>(`/api/dashboard/summary?period_month=${periodMonth}`, { token })
+        .then(setSummary)
+        .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Failed to load dashboard'))
+        .finally(() => setIsLoading(false))
+    }, 0)
+
+    return () => window.clearTimeout(timer)
   }, [periodMonth])
 
   const metrics = [
@@ -82,14 +87,7 @@ export function OverviewPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <input
-            className="h-9 rounded-md border bg-background px-3 text-sm"
-            value={periodMonth}
-            onChange={(event) => setPeriodMonth(event.target.value)}
-            aria-label="Report month"
-          />
-          <Button variant="outline">Export CSV</Button>
-          <Button>New report</Button>
+          <MonthPicker value={periodMonth} onChange={setPeriodMonth} ariaLabel="Report month" className="w-40" />
         </div>
       </div>
 
@@ -97,17 +95,17 @@ export function OverviewPage() {
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => (
-          <MetricCard key={metric.title} {...metric} />
+          <MetricCard key={metric.title} {...metric} isLoading={isLoading} />
         ))}
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_360px]">
-        <Card className="border-border/70 shadow-sm">
+        <Card className="flex min-h-[500px] flex-col border-border/70 shadow-sm">
           <CardHeader>
             <CardTitle>Emission trend</CardTitle>
             <CardDescription>Monthly tCO2e output versus reduction target.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-h-0 flex-1">
             <EmissionsChart />
           </CardContent>
         </Card>
@@ -117,7 +115,18 @@ export function OverviewPage() {
             <CardDescription>Highest energy consumption for selected period.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {summary.top_machines.length ? summary.top_machines.map((machine) => (
+            {isLoading ? Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="flex items-center justify-between gap-3 rounded-md border p-3">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="ml-auto h-4 w-20" />
+                  <Skeleton className="ml-auto h-3 w-24" />
+                </div>
+              </div>
+            )) : summary.top_machines.length ? summary.top_machines.map((machine) => (
               <div key={`${machine.machine_name}-${machine.machine_location}`} className="flex items-center justify-between gap-3 rounded-md border p-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{machine.machine_name}</p>

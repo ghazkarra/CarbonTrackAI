@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, SessionLocal, engine
 from app.models import *  # noqa: F403 - ensure SQLAlchemy models are registered
-from app.routers import alert_router, auth_router, dashboard_router, dataset_router, dev_router, machine_usage_router, recommendation_router, report_router
+from app.routers import alert_router, auth_router, dashboard_router, dataset_router, dev_router, machine_usage_router, recommendation_router, report_router, superadmin_user_router
 from app.services.seed_service import seed_database
 
 
@@ -43,4 +43,5 @@ app.include_router(recommendation_router.router)
 app.include_router(alert_router.router)
 app.include_router(report_router.router)
 app.include_router(dataset_router.router)
+app.include_router(superadmin_user_router.router)
 app.include_router(dev_router.router)

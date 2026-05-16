@@ -1,14 +1,16 @@
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type MetricCardProps = {
   title: string
   value: string
   change: string
   tone: 'good' | 'neutral'
+  isLoading?: boolean
 }
 
-export function MetricCard({ title, value, change, tone }: MetricCardProps) {
+export function MetricCard({ title, value, change, tone, isLoading = false }: MetricCardProps) {
   const Icon = tone === 'good' ? ArrowDownRight : ArrowUpRight
 
   return (
@@ -20,8 +22,17 @@ export function MetricCard({ title, value, change, tone }: MetricCardProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-semibold tracking-tight">{value}</div>
-        <p className="mt-1 text-xs text-muted-foreground">{change}</p>
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl font-semibold tracking-tight">{value}</div>
+            <p className="mt-1 text-xs text-muted-foreground">{change}</p>
+          </>
+        )}
       </CardContent>
     </Card>
   )
