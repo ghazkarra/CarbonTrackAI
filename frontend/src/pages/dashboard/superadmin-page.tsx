@@ -1,139 +1,204 @@
-import { useEffect, useState } from 'react'
-import { Database, Leaf, LogOut, RefreshCw } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { LoadingButton } from '@/components/ui/loading-button'
+import { Skeleton } from '@/components/ui/skeleton'
+import type { CompanyOption, SuperadminUser } from '@/features/superadmin/types'
 import { apiRequest } from '@/lib/api'
-import { clearAuth, getStoredToken, getStoredUser } from '@/lib/auth'
+import { getStoredToken } from '@/lib/auth'
 
-type ChromaHealth = {
-  collection: string
-  count: number
-}
-
-type IngestResponse = {
-  status: string
-  counts: Record<string, number>
+const emptyForm = {
+  name: '',
+  email: '',
+  role: 'operator' as SuperadminUser['role'],
+  company_id: '',
+  password: '',
+  is_active: true,
 }
 
 export function SuperadminPage() {
-  const navigate = useNavigate()
   const token = getStoredToken()
-  const user = getStoredUser()
-  const [health, setHealth] = useState<ChromaHealth | null>(null)
-  const [ingestResult, setIngestResult] = useState<IngestResponse | null>(null)
+  const [users, setUsers] = useState<SuperadminUser[]>([])
+  const [companies, setCompanies] = useState<CompanyOption[]>([])
+  const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [deactivatingId, setDeactivatingId] = useState<number | null>(null)
 
-  async function loadHealth() {
+  async function loadUsers() {
     if (!token) return
-    const data = await apiRequest<ChromaHealth>('/api/superadmin/datasets/chroma-health', { token })
-    setHealth(data)
+    setIsLoading(true)
+    const data = await apiRequest<SuperadminUser[]>('/api/superadmin/users', { token })
+    setUsers(data)
+    setIsLoading(false)
+  }
+
+  async function loadCompanies() {
+    if (!token) return
+    const data = await apiRequest<CompanyOption[]>('/api/superadmin/companies', { token })
+    setCompanies(data)
   }
 
   useEffect(() => {
-    loadHealth().catch(() => setError('Failed to load ChromaDB health'))
+    const timer = window.setTimeout(() => {
+      Promise.all([loadUsers(), loadCompanies()]).catch((loadError) => {
+        setError(loadError instanceof Error ? loadError.message : 'Failed to load superadmin users')
+        setIsLoading(false)
+      })
+    }, 0)
+    return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function ingestDatasets() {
+  const sortedUsers = useMemo(() => [...users].sort((first, second) => Number(second.is_active) - Number(first.is_active)), [users])
+
+  async function createUser() {
     if (!token) return
     setError(null)
-    setIsLoading(true)
+    setMessage(null)
+    setIsSaving(true)
     try {
-      const result = await apiRequest<IngestResponse>('/api/superadmin/datasets/ingest', {
+      await apiRequest<SuperadminUser>('/api/superadmin/users', {
         method: 'POST',
         token,
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          role: form.role,
+          company_id: form.company_id ? Number(form.company_id) : null,
+          password: form.password,
+          is_active: form.is_active,
+        }),
       })
-      setIngestResult(result)
-      await loadHealth()
-    } catch (ingestError) {
-      setError(ingestError instanceof Error ? ingestError.message : 'Dataset ingest failed')
+      setMessage('User created.')
+      setForm(emptyForm)
+      await loadUsers()
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to create user')
     } finally {
-      setIsLoading(false)
+      setIsSaving(false)
     }
   }
 
-  function logout() {
-    clearAuth()
-    navigate('/login', { replace: true })
+  async function deactivateUser(userId: number) {
+    if (!token) return
+    setError(null)
+    setMessage(null)
+    setDeactivatingId(userId)
+    try {
+      await apiRequest<SuperadminUser>(`/api/superadmin/users/${userId}`, { method: 'DELETE', token })
+      setMessage('User deactivated.')
+      await loadUsers()
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Failed to deactivate user')
+    } finally {
+      setDeactivatingId(null)
+    }
   }
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <header className="flex h-16 items-center justify-between border-b px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Leaf className="size-5" />
+    <div className="space-y-6">
+      <div>
+        <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Superadmin</Badge>
+        <h1 className="text-3xl font-semibold tracking-tight">User management</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Create, review, update, and deactivate CarbonTrackAI user access.</p>
+      </div>
+
+      {message ? <p className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">{message}</p> : null}
+      {error ? <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Create user</CardTitle>
+          <CardDescription>Password is required only when creating a new account.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_180px_200px_1fr_auto] xl:items-end">
+          <div className="grid gap-2">
+            <Label htmlFor="new-user-name">Name</Label>
+            <Input id="new-user-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
           </div>
-          <div>
-            <p className="font-semibold">CarbonCore AI</p>
-            <p className="text-xs text-muted-foreground">Superadmin Console</p>
+          <div className="grid gap-2">
+            <Label htmlFor="new-user-email">Email</Label>
+            <Input id="new-user-email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-muted-foreground sm:block">{user?.email}</span>
-          <Button variant="outline" size="icon" onClick={logout} aria-label="Logout">
-            <LogOut className="size-4" />
-          </Button>
-        </div>
-      </header>
+          <div className="grid gap-2">
+            <Label htmlFor="new-user-role">Role</Label>
+            <select id="new-user-role" className="h-10 cursor-pointer rounded-lg border border-input bg-background px-3 text-sm" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as SuperadminUser['role'] })}>
+              <option value="operator">Operator</option>
+              <option value="superadmin">Superadmin</option>
+            </select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="new-user-company">Company</Label>
+            <select id="new-user-company" className="h-10 cursor-pointer rounded-lg border border-input bg-background px-3 text-sm" value={form.company_id} onChange={(event) => setForm({ ...form, company_id: event.target.value })}>
+              <option value="">No company</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>{company.company_name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="new-user-password">Password</Label>
+            <Input id="new-user-password" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+          </div>
+          <LoadingButton isLoading={isSaving} onClick={createUser}>Create</LoadingButton>
+        </CardContent>
+      </Card>
 
-      <main className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        <div>
-          <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Superadmin</Badge>
-          <h1 className="text-3xl font-semibold tracking-tight">Dataset and RAG management</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Ingest reference datasets into ChromaDB and monitor vector collection health.</p>
-        </div>
-
-        {error ? <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Database className="size-5 text-primary" /> ChromaDB Health</CardTitle>
-              <CardDescription>Current collection status for `emission_knowledge_base`.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-md border p-4">
-                <p className="text-sm text-muted-foreground">Collection</p>
-                <p className="mt-1 font-medium">{health?.collection ?? '-'}</p>
-              </div>
-              <div className="rounded-md border p-4">
-                <p className="text-sm text-muted-foreground">Document count</p>
-                <p className="mt-1 text-2xl font-semibold text-primary">{health?.count ?? 0}</p>
-              </div>
-              <Button variant="outline" onClick={() => loadHealth()}>
-                <RefreshCw className="size-4" /> Refresh Health
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Dataset Ingestion</CardTitle>
-              <CardDescription>Load the five blueprint CSV datasets into ChromaDB.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button onClick={ingestDatasets} disabled={isLoading}>
-                {isLoading ? 'Ingesting...' : 'Ingest datasets'}
-              </Button>
-              {ingestResult ? (
-                <div className="space-y-2 rounded-md border p-4 text-sm">
-                  <p className="font-medium">Status: {ingestResult.status}</p>
-                  {Object.entries(ingestResult.counts).map(([file, count]) => (
-                    <div key={file} className="flex justify-between gap-4 text-muted-foreground">
-                      <span>{file}</span>
-                      <span>{count}</span>
-                    </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Users</CardTitle>
+          <CardDescription>Active users appear first. Delete deactivates access without removing history.</CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full min-w-[860px] text-left text-sm">
+            <thead className="border-b text-muted-foreground">
+              <tr>
+                <th className="py-2 pr-4">Name</th>
+                <th className="py-2 pr-4">Email</th>
+                <th className="py-2 pr-4">Role</th>
+                <th className="py-2 pr-4">Company</th>
+                <th className="py-2 pr-4">Status</th>
+                <th className="py-2 pr-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? Array.from({ length: 5 }).map((_, rowIndex) => (
+                <tr key={rowIndex} className="border-b last:border-0">
+                  {Array.from({ length: 6 }).map((__, cellIndex) => (
+                    <td key={cellIndex} className="py-3 pr-4"><Skeleton className="h-4 w-28" /></td>
                   ))}
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+                </tr>
+              )) : sortedUsers.map((user) => (
+                <tr key={user.id} className="border-b last:border-0">
+                  <td className="py-3 pr-4 font-medium">{user.name}</td>
+                  <td className="py-3 pr-4 text-muted-foreground">{user.email}</td>
+                  <td className="py-3 pr-4 capitalize">{user.role}</td>
+                  <td className="py-3 pr-4 text-muted-foreground">{user.company_name ?? '-'}</td>
+                  <td className="py-3 pr-4"><Badge variant={user.is_active ? 'outline' : 'secondary'}>{user.is_active ? 'Active' : 'Inactive'}</Badge></td>
+                  <td className="py-3 pr-4">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" asChild>
+                        <Link to={`/dashboard/superadmin/users/${user.id}`}>Detail</Link>
+                      </Button>
+                      <LoadingButton variant="outline" disabled={!user.is_active} isLoading={deactivatingId === user.id} onClick={() => deactivateUser(user.id)}>
+                        Deactivate
+                      </LoadingButton>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!isLoading && !users.length ? <p className="py-6 text-sm text-muted-foreground">No users found.</p> : null}
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -2,11 +2,11 @@ import { Leaf } from 'lucide-react'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { LoadingButton } from '@/components/ui/loading-button'
 import { login } from '@/lib/auth'
 
 export function LoginPage() {
@@ -58,9 +58,9 @@ export function LoginPage() {
             <Label htmlFor="remember" className="text-sm font-normal">Remember me</Label>
           </div>
           {error ? <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
-          <Button className="w-full" disabled={isSubmitting} type="submit">
-            {isSubmitting ? 'Logging in...' : 'Login'}
-          </Button>
+          <LoadingButton className="w-full" isLoading={isSubmitting} type="submit">
+            Login
+          </LoadingButton>
           </form>
           <p className="text-center text-sm text-muted-foreground">
             No account? <Link to="/register" className="text-primary hover:underline">Create one</Link>

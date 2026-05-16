@@ -1,3 +1,5 @@
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+
 const data = [
   { month: 'Jan', emissions: 58, target: 52 },
   { month: 'Feb', emissions: 54, target: 50 },
@@ -10,32 +12,41 @@ const data = [
 ] as const
 
 export function EmissionsChart() {
-  const max = 60
-
   return (
-    <div className="h-[320px] w-full">
-      <div className="flex h-full items-end gap-3 sm:gap-5">
-        {data.map((item) => (
-          <div key={item.month} className="flex min-w-0 flex-1 flex-col items-center gap-3">
-            <div className="flex h-64 w-full items-end justify-center gap-1.5 rounded-md bg-muted/40 px-2 py-3">
-              <div
-                className="w-3 rounded-t-full bg-primary shadow-sm shadow-primary/30 sm:w-4"
-                style={{ height: `${(item.emissions / max) * 100}%` }}
-                title={`${item.emissions} tCO2e`}
-              />
-              <div
-                className="w-3 rounded-t-full bg-primary/25 sm:w-4"
-                style={{ height: `${(item.target / max) * 100}%` }}
-                title={`${item.target} tCO2e target`}
-              />
-            </div>
-            <span className="text-xs text-muted-foreground">{item.month}</span>
-          </div>
-        ))}
+    <div className="flex h-full min-h-[360px] w-full flex-col">
+      <div className="min-h-0 flex-1">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ left: -18, right: 12, top: 12, bottom: 0 }}>
+          <defs>
+            <linearGradient id="actualEmissions" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.35} />
+              <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.04} />
+            </linearGradient>
+            <linearGradient id="targetEmissions" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="var(--muted-foreground)" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="var(--muted-foreground)" stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke="var(--border)" strokeDasharray="4 4" vertical={false} />
+          <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} />
+          <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} />
+          <Tooltip
+            cursor={{ stroke: 'var(--primary)', strokeOpacity: 0.25 }}
+            contentStyle={{
+              background: 'var(--popover)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              color: 'var(--popover-foreground)',
+            }}
+          />
+          <Area type="monotone" dataKey="target" stroke="var(--muted-foreground)" strokeWidth={2} fill="url(#targetEmissions)" name="Target" />
+          <Area type="monotone" dataKey="emissions" stroke="var(--primary)" strokeWidth={3} fill="url(#actualEmissions)" name="Actual" />
+        </AreaChart>
+      </ResponsiveContainer>
       </div>
-      <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-2"><span className="size-2 rounded-md bg-primary" />Actual</span>
-        <span className="flex items-center gap-2"><span className="size-2 rounded-md bg-primary/25" />Target</span>
+        <span className="flex items-center gap-2"><span className="size-2 rounded-md bg-muted-foreground" />Target</span>
       </div>
     </div>
   )
