@@ -124,7 +124,7 @@ export function MachineUsagePage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Pemakaian Mesin</Badge>
-          <h1 className="text-4xl font-semibold tracking-tight">Data pemakaian mesin</h1>
+          <h1 className="text-4xl font-semibold tracking-tight">Data Pemakaian Mesin</h1>
           <p className="mt-3 text-base text-muted-foreground">Konteks perusahaan: {user?.company_name ?? 'Perusahaan tidak diketahui'}</p>
         </div>
         <Button asChild size="lg">
@@ -137,8 +137,8 @@ export function MachineUsagePage() {
       <Card>
         <CardHeader className="gap-4">
           <div>
-            <CardTitle className="text-xl">Tabel data pemakaian</CardTitle>
-            <CardDescription className="text-base">{filteredRecords.length} data ditampilkan, total {numberFormatter.format(totalEnergy)} kWh.</CardDescription>
+            <CardTitle className="text-xl">Data tabel pemakaian</CardTitle>
+            <CardDescription className="text-base">{filteredRecords.length} record ditampilkan, total {numberFormatter.format(totalEnergy)} kWh.</CardDescription>
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_1fr_auto]">
             <Input placeholder="Cari mesin, lokasi, bulan, atau catatan" value={search} onChange={(event) => setSearch(event.target.value)} />
