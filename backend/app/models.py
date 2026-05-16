@@ -1,12 +1,19 @@
 # models.py
 from enum import Enum as PyEnum
-from sqlalchemy import Column, Integer, String, DECIMAL, DateTime, Text, ForeignKey, Date, Boolean, Enum as SQLEnum
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Column, Integer, String, DECIMAL, DateTime,
+    Text, ForeignKey, Date, Boolean, Enum as SQLEnum
+)
+# Fixed: moved from ext.declarative
+from sqlalchemy.orm import relationship, declarative_base
 from datetime import datetime
-from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
-# Create Role enum for user roles
 
+Base = declarative_base()
+
+
+# ──────────────────────────────────────────
+# Enums
+# ──────────────────────────────────────────
 
 class UserRole(PyEnum):
     ADMIN = "admin"
@@ -28,13 +35,13 @@ class ReportType(PyEnum):
             cls.DAILY: "Daily Report",
             cls.WEEKLY: "Weekly Report",
             cls.MONTHLY: "Monthly Report",
-            cls.YEARLY: "Yearly Report"
+            cls.YEARLY: "Yearly Report",
         }
 
     @classmethod
     def get_date_ranges(cls, reference_date=None):
         """Get date ranges for each report type"""
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         from dateutil.relativedelta import relativedelta
 
         if reference_date is None:
@@ -42,47 +49,48 @@ class ReportType(PyEnum):
 
         ranges = {}
 
-        # Daily range
+        # Daily
         ranges[cls.DAILY] = {
-            'start': reference_date,
-            'end': reference_date,
-            'label': f"Daily Report - {reference_date.strftime('%Y-%m-%d')}"
+            "start": reference_date,
+            "end": reference_date,
+            "label": f"Daily Report - {reference_date.strftime('%Y-%m-%d')}",
         }
 
-        # Weekly range (Monday to Sunday)
+        # Weekly (Monday to Sunday)
         start_of_week = reference_date - \
             timedelta(days=reference_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
         ranges[cls.WEEKLY] = {
-            'start': start_of_week,
-            'end': start_of_week + timedelta(days=6),
-            'label': f"Weekly Report - {start_of_week.strftime('%Y-%m-%d')} to {(start_of_week + timedelta(days=6)).strftime('%Y-%m-%d')}"
+            "start": start_of_week,
+            "end": end_of_week,
+            "label": f"Weekly Report - {start_of_week.strftime('%Y-%m-%d')} to {end_of_week.strftime('%Y-%m-%d')}",
         }
 
-        # Monthly range
+        # Monthly
         start_of_month = reference_date.replace(day=1)
-        if reference_date.month == 12:
-            end_of_month = reference_date.replace(
-                year=reference_date.year + 1, month=1, day=1) - timedelta(days=1)
-        else:
-            end_of_month = reference_date.replace(
-                month=reference_date.month + 1, day=1) - timedelta(days=1)
+        end_of_month = (start_of_month + relativedelta(months=1)
+                        ) - timedelta(days=1)
         ranges[cls.MONTHLY] = {
-            'start': start_of_month,
-            'end': end_of_month,
-            'label': f"Monthly Report - {start_of_month.strftime('%B %Y')}"
+            "start": start_of_month,
+            "end": end_of_month,
+            "label": f"Monthly Report - {start_of_month.strftime('%B %Y')}",
         }
 
-        # Yearly range
+        # Yearly
         start_of_year = reference_date.replace(month=1, day=1)
         end_of_year = reference_date.replace(month=12, day=31)
         ranges[cls.YEARLY] = {
-            'start': start_of_year,
-            'end': end_of_year,
-            'label': f"Yearly Report - {reference_date.year}"
+            "start": start_of_year,
+            "end": end_of_year,
+            "label": f"Yearly Report - {reference_date.year}",
         }
 
         return ranges
 
+
+# ──────────────────────────────────────────
+# Models
+# ──────────────────────────────────────────
 
 class Company(Base):
     __tablename__ = "companies"
@@ -91,22 +99,32 @@ class Company(Base):
     name = Column(String(255), nullable=False)
     industry_type = Column(String(100))
     location = Column(String(255))
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now())  # Fixed: lambda
 
     # Relationships
-    industrial_activities = relationship(
-        "IndustrialActivity", back_populates="company", cascade="all, delete-orphan")
-    generated_reports = relationship(
-        "GeneratedReport", back_populates="company", cascade="all, delete-orphan")
     users = relationship("User", back_populates="company")
+    industrial_activities = relationship(
+        "IndustrialActivity", back_populates="company", cascade="all, delete-orphan"
+    )
+    generated_reports = relationship(
+        "GeneratedReport", back_populates="company", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self):
+        return f"<Company(id={self.id}, name={self.name!r})>"
 
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(Integer, ForeignKey("companies.id"),
+                        nullable=True)  # Fixed: added FK
     name = Column(String(255), nullable=False)
-    email = Column(String(255), unique=True)
+    email = Column(String(255), unique=True, nullable=False)
+    # Fixed: added password field
+    password_hash = Column(String(255), nullable=False)
     role = Column(
         SQLEnum(
             UserRole,
@@ -114,35 +132,23 @@ class User(Base):
             name="user_role",
             native_enum=False,
         ),
-        default=UserRole.ADMIN,
+        default=UserRole.USER,
+        nullable=False,
     )
-    created_at = Column(DateTime, default=datetime.now)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now())  # Fixed: lambda
 
+    # Relationships
+    # Fixed: added back_populates
+    company = relationship("Company", back_populates="users")
     review_logs = relationship("ReviewLog", back_populates="user")
+    industrial_activities = relationship(
+        "IndustrialActivity", back_populates="created_by_user"
+    )
 
-
-class IndustrialActivity(Base):
-    __tablename__ = "industrial_activities"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    company_id = Column(Integer, ForeignKey(
-        "companies.id", ondelete="CASCADE"))
-    activity_name = Column(String(255), nullable=False)
-    description = Column(Text)
-    category = Column(String(100))
-    amount = Column(DECIMAL(15, 4), nullable=False)
-    unit = Column(String(50), nullable=False)
-    activity_date = Column(DateTime)
-    location = Column(String(255))
-    calculated_emission = Column(DECIMAL(15, 4), default=0)
-    status = Column(String(50), default="pending")
-    created_at = Column(DateTime, default=datetime.now)
-
-    company = relationship("Company", back_populates="industrial_activities")
-    ai_recommendations = relationship(
-        "AIRecommendation", back_populates="activity", cascade="all, delete-orphan")
-    review_logs = relationship(
-        "ReviewLog", back_populates="activity", cascade="all, delete-orphan")
+    def __repr__(self):
+        return f"<User(id={self.id}, email={self.email!r}, role={self.role})>"
 
 
 class EmissionFactor(Base):
@@ -156,60 +162,115 @@ class EmissionFactor(Base):
     factor_unit = Column(String(100), nullable=False)
     source = Column(String(255))
     embedding_json = Column(Text)
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now())  # Fixed: lambda
 
+    # Relationships
     ai_recommendations = relationship(
         "AIRecommendation", back_populates="emission_factor")
     review_logs = relationship(
         "ReviewLog", back_populates="selected_emission_factor")
+
+    def __repr__(self):
+        return f"<EmissionFactor(id={self.id}, name={self.name!r}, category={self.category!r})>"
+
+
+class IndustrialActivity(Base):
+    __tablename__ = "industrial_activities"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(Integer, ForeignKey(
+        "companies.id", ondelete="CASCADE"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"),
+                        nullable=True)  # Fixed: added audit field
+    activity_name = Column(String(255), nullable=False)
+    description = Column(Text)
+    category = Column(String(100))
+    amount = Column(DECIMAL(15, 4), nullable=False)
+    unit = Column(String(50), nullable=False)
+    activity_date = Column(DateTime)
+    location = Column(String(255))
+    calculated_emission = Column(DECIMAL(15, 4), default=0)
+    status = Column(String(50), default="pending")
+    created_at = Column(
+        DateTime, default=lambda: datetime.now())  # Fixed: lambda
+
+    # Relationships
+    company = relationship("Company", back_populates="industrial_activities")
+    created_by_user = relationship(
+        "User", back_populates="industrial_activities")  # Fixed: added
+    ai_recommendations = relationship(
+        "AIRecommendation", back_populates="activity", cascade="all, delete-orphan"
+    )
+    review_logs = relationship(
+        "ReviewLog", back_populates="activity", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self):
+        return f"<IndustrialActivity(id={self.id}, name={self.activity_name!r}, status={self.status!r})>"
 
 
 class AIRecommendation(Base):
     __tablename__ = "ai_recommendations"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    activity_id = Column(Integer, ForeignKey(
-        "industrial_activities.id", ondelete="CASCADE"), nullable=False)
-    emission_factor_id = Column(Integer, ForeignKey("emission_factors.id"))
+    activity_id = Column(
+        Integer, ForeignKey("industrial_activities.id", ondelete="CASCADE"), nullable=False
+    )
+    emission_factor_id = Column(Integer, ForeignKey(
+        "emission_factors.id"), nullable=True)
     plain_description = Column(Text)
     similarity_score = Column(DECIMAL(10, 6))
     confidence_score = Column(DECIMAL(10, 6))
     justification = Column(Text)
     match_status = Column(String(50))
     calculated_emission = Column(DECIMAL(15, 4))
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now())  # Fixed: lambda
 
+    # Relationships
     activity = relationship("IndustrialActivity",
                             back_populates="ai_recommendations")
     emission_factor = relationship(
         "EmissionFactor", back_populates="ai_recommendations")
+
+    def __repr__(self):
+        return f"<AIRecommendation(id={self.id}, activity_id={self.activity_id}, status={self.match_status!r})>"
 
 
 class ReviewLog(Base):
     __tablename__ = "review_logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    activity_id = Column(Integer, ForeignKey(
-        "industrial_activities.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    activity_id = Column(
+        Integer, ForeignKey("industrial_activities.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     action = Column(String(50), nullable=False)
     selected_emission_factor_id = Column(
-        Integer, ForeignKey("emission_factors.id"))
+        Integer, ForeignKey("emission_factors.id"), nullable=True)
     note = Column(Text)
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now())  # Fixed: lambda
 
+    # Relationships
     activity = relationship("IndustrialActivity", back_populates="review_logs")
     user = relationship("User", back_populates="review_logs")
     selected_emission_factor = relationship(
-        "EmissionFactor", back_populates="review_logs")
+        "EmissionFactor", back_populates="review_logs"
+    )
+
+    def __repr__(self):
+        return f"<ReviewLog(id={self.id}, activity_id={self.activity_id}, action={self.action!r})>"
 
 
 class GeneratedReport(Base):
     __tablename__ = "generated_reports"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    company_id = Column(Integer, ForeignKey(
-        "companies.id", ondelete="CASCADE"))
+    company_id = Column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
     report_type = Column(
         SQLEnum(
             ReportType,
@@ -225,13 +286,17 @@ class GeneratedReport(Base):
     total_emission = Column(DECIMAL(15, 4))
     include_completed_recommendations = Column(Boolean, default=False)
     pdf_file_path = Column(String(500))
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now())  # Fixed: lambda
 
     # Relationships
     company = relationship("Company", back_populates="generated_reports")
 
     def __repr__(self):
-        return f"<GeneratedReport(id={self.id}, company_id={self.company_id}, type={self.report_type.value}, period={self.period_label})>"
+        return (
+            f"<GeneratedReport(id={self.id}, company_id={self.company_id}, "
+            f"type={self.report_type.value!r}, period={self.period_label!r})>"
+        )
 
     @property
     def report_type_display(self):
