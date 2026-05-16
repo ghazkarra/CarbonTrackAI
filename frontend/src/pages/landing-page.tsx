@@ -1,24 +1,23 @@
 import {
-  ArrowLeft,
-  ArrowRight,
-  Building2,
-  Calculator,
-  CheckCircle2,
-  ChevronRight,
-  ClipboardCheck,
-  Factory,
-  Gauge,
-  Handshake,
-  Heart,
-  Leaf,
-  Mail,
-  MapPin,
-  MessageCircle,
-  PlugZap,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+  FiArrowLeft as ArrowLeft,
+  FiArrowRight as ArrowRight,
+  FiCheckCircle as CheckCircle2,
+  FiChevronRight as ChevronRight,
+  FiClipboard as ClipboardCheck,
+  FiCpu as Factory,
+  FiGrid as Building2,
+  FiHeart as Heart,
+  FiMail as Mail,
+  FiMapPin as MapPin,
+  FiMessageCircle as MessageCircle,
+  FiShield as ShieldCheck,
+  FiSliders as Gauge,
+  FiStar as Sparkles,
+  FiTool as Calculator,
+  FiUsers as Handshake,
+  FiZap as PlugZap,
+} from 'react-icons/fi'
+import type { IconType } from 'react-icons'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, MouseEvent, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -77,7 +76,7 @@ const purposeActivities = [
   ['Susun ringkasan siap audit', 'Ekspor laporan emisi berkala', 'Dokumentasikan progres reduksi'],
 ]
 
-const collaborationSteps: Array<{ description: string; icon: LucideIcon; title: string }> = [
+const collaborationSteps: Array<{ description: string; icon: IconType; title: string }> = [
   {
     title: 'Discovery',
     description: 'Konsultasi kebutuhan, jumlah fasilitas, dan sumber data yang sudah tersedia.',
@@ -116,7 +115,7 @@ const trackingEstimateKey = 'carbontrackai:landing-tracking-estimate'
 
 type ActiveTool = 'electricity' | 'productionTime'
 
-const toolOptions: Array<{ icon: LucideIcon; label: string; value: ActiveTool }> = [
+const toolOptions: Array<{ icon: IconType; label: string; value: ActiveTool }> = [
   { value: 'electricity', label: 'Listrik', icon: PlugZap },
   { value: 'productionTime', label: 'Waktu produksi', icon: Factory },
 ]
@@ -145,7 +144,6 @@ export function LandingPage() {
   const ActivePurposeIcon = activePurpose.icon
 
   const isTrackingLocked = trackingAttempts >= 3
-  const remainingTrackingAttempts = Math.max(0, 3 - trackingAttempts)
 
   function handleSmoothScroll(target: string, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) {
     event?.preventDefault()
@@ -184,7 +182,7 @@ export function LandingPage() {
         <div className="flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-10 xl:px-14">
           <Link to="/" className="group flex items-center gap-3 font-bold">
             <span className="flex size-10 items-center justify-center rounded-[8px] bg-emerald-600 text-white transition-transform group-hover:-rotate-6 group-hover:scale-105">
-              <Leaf className="size-5" />
+              <Building2 className="size-5" />
             </span>
             <span className="text-lg font-black sm:text-xl">CarbonTrackAI</span>
           </Link>
@@ -239,7 +237,7 @@ export function LandingPage() {
               <div className="absolute right-4 top-40 size-48 rounded-full border border-emerald-300/30 bg-emerald-300/10 backdrop-blur landing-float-soft" />
               <div className="absolute bottom-12 left-20 size-40 rounded-full border border-white/20 bg-white/10 backdrop-blur landing-float-slower" />
               <div className="absolute left-1/2 top-1/2 grid size-28 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-emerald-400 text-[#062515] shadow-[0_0_70px_rgba(52,211,153,0.45)]">
-                <Leaf className="size-11" />
+                <Building2 className="size-11" />
               </div>
             </div>
           </div>
@@ -520,7 +518,7 @@ export function LandingPage() {
           <div>
             <Link to="/" className="flex w-fit items-center gap-3 text-xl font-black">
               <span className="grid size-12 place-items-center rounded-[8px] bg-emerald-400 text-[#062515]">
-                <Leaf className="size-6" />
+                <Building2 className="size-6" />
               </span>
               CarbonTrackAI
             </Link>

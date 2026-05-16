@@ -128,20 +128,20 @@ export function MachineUsagePage() {
         <p className="mt-2 text-sm text-muted-foreground">Company context: {user?.company_name ?? 'Unknown company'}</p>
       </div>
 
-      <Tabs defaultValue="form" className="gap-4">
-        <div className="flex justify-start">
-        <TabsList className="w-full sm:w-fit">
-          <TabsTrigger value="form">Input Form</TabsTrigger>
-          <TabsTrigger value="csv">CSV Upload</TabsTrigger>
-        </TabsList>
-        </div>
-        <TabsContent value="form">
-          <Card>
-            <CardHeader>
-              <CardTitle>Single machine input</CardTitle>
-              <CardDescription>Submit one machine usage row. Empty kW or kWh values are calculated by backend.</CardDescription>
-            </CardHeader>
-            <CardContent>
+      <Tabs defaultValue="form" className="w-full gap-4">
+        <Card className="w-full">
+          <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle>Machine usage input</CardTitle>
+              <CardDescription>Submit one machine usage row or upload the prepared CSV template.</CardDescription>
+            </div>
+            <TabsList className="w-full shrink-0 md:w-fit">
+              <TabsTrigger value="form">Input Form</TabsTrigger>
+              <TabsTrigger value="csv">CSV Upload</TabsTrigger>
+            </TabsList>
+          </CardHeader>
+          <CardContent>
+            <TabsContent value="form" className="mt-0">
               <form className="grid gap-4 lg:grid-cols-2" onSubmit={handleSubmit}>
                 <div className="grid gap-2">
                   <Label htmlFor="report_month">Report Month</Label>
@@ -185,16 +185,8 @@ export function MachineUsagePage() {
                   <LoadingButton type="submit" isLoading={isLoading}>Save usage</LoadingButton>
                 </div>
               </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="csv">
-          <Card>
-            <CardHeader>
-              <CardTitle>CSV upload</CardTitle>
-              <CardDescription>Upload the prepared machine usage CSV template.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </TabsContent>
+            <TabsContent value="csv" className="mt-0 space-y-4">
               <Button variant="outline" asChild>
                 <a href="/sample_machine_usage_2025_02.csv" download>Download sample CSV</a>
               </Button>
@@ -209,9 +201,9 @@ export function MachineUsagePage() {
                   <p className="mt-1 text-muted-foreground">Total {importResult.total_rows}, valid {importResult.valid_rows}, warning {importResult.warning_rows}, error {importResult.error_rows}</p>
                 </div>
               ) : null}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
+          </CardContent>
+        </Card>
       </Tabs>
 
       <Card>

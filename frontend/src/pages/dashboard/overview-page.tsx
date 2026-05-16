@@ -99,8 +99,8 @@ export function OverviewPage() {
         ))}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_360px]">
-        <Card className="flex min-h-[500px] flex-col border-border/70 shadow-sm">
+      <section className="grid gap-4">
+        <Card className="flex min-h-[420px] flex-col border-border/70 shadow-sm">
           <CardHeader>
             <CardTitle>Emission trend</CardTitle>
             <CardDescription>Monthly tCO2e output versus reduction target.</CardDescription>
@@ -114,7 +114,7 @@ export function OverviewPage() {
             <CardTitle>Top machines</CardTitle>
             <CardDescription>Highest energy consumption for selected period.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {isLoading ? Array.from({ length: 4 }).map((_, index) => (
               <div key={index} className="flex items-center justify-between gap-3 rounded-md border p-3">
                 <div className="min-w-0 flex-1 space-y-2">
@@ -137,7 +137,7 @@ export function OverviewPage() {
                   <p className="text-xs text-muted-foreground">{formatNumber(machine.estimated_co2e_kg)} kg CO2e</p>
                 </div>
               </div>
-            )) : <p className="text-sm text-muted-foreground">No machine usage records yet.</p>}
+            )) : <p className="text-sm text-muted-foreground md:col-span-2 xl:col-span-4">No machine usage records yet.</p>}
           </CardContent>
         </Card>
       </section>

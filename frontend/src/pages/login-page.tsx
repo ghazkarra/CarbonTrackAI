@@ -1,4 +1,4 @@
-import { ArrowRight, Eye, EyeOff, Leaf, LoaderCircle, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
+import { FiArrowRight as ArrowRight, FiEye as Eye, FiEyeOff as EyeOff, FiGrid as Leaf, FiLoader as LoaderCircle, FiLock as LockKeyhole, FiMail as Mail, FiShield as ShieldCheck } from 'react-icons/fi'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'

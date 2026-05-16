@@ -13,7 +13,7 @@ const data = [
 
 export function EmissionsChart() {
   return (
-    <div className="flex h-full min-h-[360px] w-full flex-col">
+    <div className="flex h-full min-h-[300px] w-full flex-col">
       <div className="min-h-0 flex-1">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ left: -18, right: 12, top: 12, bottom: 0 }}>

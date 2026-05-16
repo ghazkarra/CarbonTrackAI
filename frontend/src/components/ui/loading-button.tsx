@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react'
+import { FiLoader as Loader2 } from 'react-icons/fi'
 import { Button } from '@/components/ui/button'
 import type { ComponentProps } from 'react'
 

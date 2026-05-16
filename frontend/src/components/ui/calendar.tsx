@@ -8,7 +8,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "lucide-react"
+import { FiChevronDown as ChevronDownIcon, FiChevronLeft as ChevronLeftIcon, FiChevronRight as ChevronRightIcon } from "react-icons/fi"
 
 function Calendar({
   className,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Database, RefreshCw } from 'lucide-react'
+import { FiDatabase as Database, FiRefreshCw as RefreshCw } from 'react-icons/fi'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingButton } from '@/components/ui/loading-button'

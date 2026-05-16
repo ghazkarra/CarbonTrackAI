@@ -16,16 +16,16 @@ export function DashboardLayout() {
       <div className="flex min-h-svh">
         <AppSidebar
           role={role}
+          isCollapsed={isSidebarCollapsed}
+          onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
           className={cn(
-            'sticky top-0 hidden h-svh shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-out lg:flex',
-            isSidebarCollapsed ? 'w-0 border-r-0 px-0 opacity-0' : 'w-72 opacity-100'
+            'sticky top-0 hidden h-svh shrink-0 overflow-hidden transition-[width] duration-300 ease-out lg:flex',
+            isSidebarCollapsed ? 'w-20' : 'w-72'
           )}
         />
         <div className="min-w-0 flex-1">
           <DashboardHeader
             role={role}
-            isSidebarCollapsed={isSidebarCollapsed}
-            onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
           />
           <main className="flex w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
             <Outlet />

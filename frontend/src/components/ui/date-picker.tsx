@@ -1,4 +1,4 @@
-import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { FiCalendar as CalendarIcon, FiChevronLeft as ChevronLeft, FiChevronRight as ChevronRight } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'

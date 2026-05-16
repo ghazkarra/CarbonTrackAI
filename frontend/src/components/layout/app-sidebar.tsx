@@ -1,37 +1,39 @@
-import { AlertTriangle, CheckSquare, ClipboardList, Database, FileCheck2, Gauge, Leaf, LogOut, Users } from 'lucide-react'
+import { FiAlertTriangle, FiCheckSquare, FiClipboard, FiColumns, FiDatabase, FiFeather, FiFileText, FiGrid, FiLogOut, FiUsers } from 'react-icons/fi'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { clearAuth, getStoredUser, type UserRole } from '@/lib/auth'
 
 type NavItem = {
   label: string
   href: string
-  icon: typeof Gauge
+  icon: typeof FiGrid
   end?: boolean
   activePaths?: string[]
 }
 
 const operatorNavItems: NavItem[] = [
-  { label: 'Overview', href: '/dashboard', icon: Gauge, end: true },
-  { label: 'Machine Usage', href: '/dashboard/machine-usage', icon: ClipboardList },
-  { label: 'Recommendations', href: '/dashboard/recommendations', icon: CheckSquare },
-  { label: 'Alerts', href: '/dashboard/alerts', icon: AlertTriangle },
-  { label: 'Reports', href: '/dashboard/reports', icon: FileCheck2 },
+  { label: 'Overview', href: '/dashboard', icon: FiGrid, end: true },
+  { label: 'Machine Usage', href: '/dashboard/machine-usage', icon: FiClipboard },
+  { label: 'Recommendations', href: '/dashboard/recommendations', icon: FiCheckSquare },
+  { label: 'Alerts', href: '/dashboard/alerts', icon: FiAlertTriangle },
+  { label: 'Reports', href: '/dashboard/reports', icon: FiFileText },
 ]
 
 const superadminNavItems: NavItem[] = [
-  { label: 'Users', href: '/dashboard/superadmin', icon: Users, end: true, activePaths: ['/dashboard/superadmin/users'] },
-  { label: 'Datasets', href: '/dashboard/superadmin/datasets', icon: Database },
+  { label: 'Users', href: '/dashboard/superadmin', icon: FiUsers, end: true, activePaths: ['/dashboard/superadmin/users'] },
+  { label: 'Datasets', href: '/dashboard/superadmin/datasets', icon: FiDatabase },
 ]
 
 type AppSidebarProps = {
   className?: string
   role?: UserRole
+  onToggleSidebar?: () => void
+  isCollapsed?: boolean
 }
 
-export function AppSidebar({ className, role }: AppSidebarProps) {
+export function AppSidebar({ className, role, onToggleSidebar, isCollapsed = false }: AppSidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const user = getStoredUser()
@@ -50,15 +52,25 @@ export function AppSidebar({ className, role }: AppSidebarProps) {
   }
 
   return (
-    <aside className={cn('flex h-full flex-col border-r bg-sidebar px-4 py-5', className)}>
-      <div className="flex items-center gap-3 px-2">
-        <div className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm shadow-primary/30">
-          <Leaf className="size-5" />
+    <aside className={cn('flex h-full flex-col border-r bg-sidebar py-5', isCollapsed ? 'px-3' : 'px-4', className)}>
+      <div className={cn('flex items-center gap-3', isCollapsed ? 'justify-center px-0' : 'px-2')}>
+        <div className={cn('flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm shadow-primary/30', isCollapsed && 'hidden')}>
+          <FiFeather className="size-5" />
         </div>
-        <div>
+        <div className={cn('min-w-0 flex-1', isCollapsed && 'hidden')}>
           <p className="font-semibold tracking-tight">CarbonTrackAI</p>
           <p className="text-xs text-muted-foreground">{effectiveRole === 'superadmin' ? 'Superadmin Console' : 'Admin Console'}</p>
         </div>
+        {onToggleSidebar ? (
+          <button
+            type="button"
+            className="hidden size-10 shrink-0 place-items-center rounded-md text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground lg:grid"
+            onClick={onToggleSidebar}
+            aria-label={isCollapsed ? 'Open sidebar' : 'Close sidebar'}
+          >
+            <FiColumns className="size-5" />
+          </button>
+        ) : null}
       </div>
 
       <nav className="mt-8 space-y-1">
@@ -68,32 +80,47 @@ export function AppSidebar({ className, role }: AppSidebarProps) {
           <Link
             key={item.label}
             to={item.href}
+            title={isCollapsed ? item.label : undefined}
             className={cn(
               'flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              isCollapsed && 'justify-center px-0',
               isActive && 'bg-primary/10 text-primary shadow-inner shadow-primary/5'
             )}
           >
-            <item.icon className="size-4" />
-            {item.label}
+            <item.icon className={cn('shrink-0', isCollapsed ? 'size-5' : 'size-4')} />
+            <span className={cn(isCollapsed && 'sr-only')}>{item.label}</span>
           </Link>
           )
         })}
       </nav>
 
-      <div className="mt-auto space-y-3 border-t pt-4">
-        <div className="flex items-center gap-3 rounded-md bg-sidebar-accent/60 p-3">
-          <Avatar className="size-9 rounded-md">
-            <AvatarFallback className="rounded-md bg-primary/10 text-xs text-primary">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{user?.company_name ?? 'CarbonTrackAI'}</p>
-            <p className="truncate text-xs text-muted-foreground">{user?.name ?? (effectiveRole === 'superadmin' ? 'Superadmin' : 'Operator')}</p>
-          </div>
-        </div>
-        <Button variant="outline" className="w-full justify-start" onClick={handleLogout}>
-          <LogOut className="size-4" />
-          Logout
-        </Button>
+      <div className="mt-auto border-t pt-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'w-full rounded-md bg-sidebar-accent/60 p-3 text-left transition hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                isCollapsed ? 'grid place-items-center' : 'flex items-center gap-3'
+              )}
+              aria-label="Open account menu"
+            >
+              <Avatar className="size-9 rounded-md">
+                <AvatarFallback className="rounded-md bg-primary/10 text-xs text-primary">{initials}</AvatarFallback>
+              </Avatar>
+              <div className={cn('min-w-0 flex-1', isCollapsed && 'sr-only')}>
+                <p className="truncate text-sm font-medium">{user?.company_name ?? 'CarbonTrackAI'}</p>
+                <p className="truncate text-xs text-muted-foreground">{effectiveRole === 'superadmin' ? 'Superadmin' : 'Operator'}</p>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="end" className="w-48">
+            <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
+              <FiLogOut className="size-4" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </aside>
   )
