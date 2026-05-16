@@ -33,14 +33,14 @@ const heroImage =
 const navItems = [
   { href: '#solusi', label: 'Solusi' },
   { href: '#mitra', label: 'Mitra' },
-  { href: '#tools', label: 'Tools' },
+  { href: '#tools', label: 'Alat' },
   { href: '#kontak', label: 'Kontak' },
 ]
 
 const stats = [
   { value: '12+', label: 'perusahaan pilot' },
   { value: '6', label: 'sektor industri' },
-  { value: '24/7', label: 'monitoring emisi' },
+  { value: '24/7', label: 'pemantauan emisi' },
   { value: '3x', label: 'laporan lebih cepat' },
 ]
 
@@ -55,8 +55,8 @@ const partnerCompanies = [
 
 const solutions = [
   {
-    title: 'Tracking emisi operasional',
-    description: 'Gabungkan data energi, bahan bakar, dan aktivitas produksi ke satu dashboard yang mudah dibaca.',
+    title: 'Pelacakan emisi operasional',
+    description: 'Gabungkan data energi, bahan bakar, dan aktivitas produksi ke satu dasbor yang mudah dibaca.',
     icon: Gauge,
   },
   {
@@ -79,23 +79,23 @@ const purposeActivities = [
 
 const collaborationSteps: Array<{ description: string; icon: IconType; title: string }> = [
   {
-    title: 'Discovery',
+    title: 'Pemetaan',
     description: 'Konsultasi kebutuhan, jumlah fasilitas, dan sumber data yang sudah tersedia.',
     icon: MessageCircle,
   },
   {
-    title: 'Connect',
+    title: 'Koneksi',
     description: 'Integrasi data meter, produksi, bahan bakar, atau unggah dataset awal.',
     icon: PlugZap,
   },
   {
-    title: 'Launch',
-    description: 'Aktivasi dashboard, training operator, dan baseline emisi pertama.',
+    title: 'Aktivasi',
+    description: 'Aktivasi dasbor, pelatihan operator, dan garis dasar emisi pertama.',
     icon: Gauge,
   },
   {
-    title: 'Optimize',
-    description: 'Review bulanan untuk rekomendasi efisiensi, laporan, dan target reduksi.',
+    title: 'Optimasi',
+    description: 'Tinjauan bulanan untuk rekomendasi efisiensi, laporan, dan target reduksi.',
     icon: Sparkles,
   },
 ]
@@ -194,7 +194,7 @@ export function LandingPage() {
           </nav>
           <div className="flex items-center gap-2">
             <Button variant="ghost" className="text-lg hidden sm:inline-flex" asChild>
-              <Link to="/login">Login</Link>
+              <Link to="/login">Masuk</Link>
             </Button>
             <Button className="rounded-full bg-emerald-700 px-5 text-base text-lg text-white hover:bg-emerald-800" onClick={(event) => handleSmoothScroll('#kontak', event)}>
               Kerja sama
@@ -226,7 +226,7 @@ export function LandingPage() {
                   <ArrowRight className="size-4" />
                 </Button>
                 <Button size="lg" variant="outline" className="landing-hero-button h-12 rounded-full border-white/30 bg-white/10 px-6 text-base font-bold text-white hover:bg-white hover:text-emerald-950" asChild>
-                  <Link to="/login">Masuk dashboard</Link>
+                  <Link to="/login">Masuk dasbor</Link>
                 </Button>
               </div>
             </div>
@@ -439,7 +439,7 @@ export function LandingPage() {
               </div>
 
               <Button className="mt-6 h-11 w-full rounded-full bg-emerald-700 text-base font-bold text-white hover:bg-emerald-800" disabled={isTrackingLocked} type="submit">
-                {isTrackingLocked ? 'Batas percobaan tercapai' : 'Submit estimasi'}
+                {isTrackingLocked ? 'Batas percobaan tercapai' : 'Kirim estimasi'}
               </Button>
 
               <div className={cn('mt-6 rounded-[8px] border border-emerald-100 bg-white p-4 transition', isTrackingLocked && 'border-emerald-200 bg-emerald-50')}>
@@ -448,7 +448,7 @@ export function LandingPage() {
                   <p className="text-sm leading-7 text-slate-600">
                     {isTrackingLocked
                       ? 'Untuk membuka hasil berupa report lengkap dan rekomendasi terbaik, lanjutkan kerja sama dengan tim CarbonTrackAI.'
-                      : 'Estimasi ini bersifat demo. Di dashboard penuh, faktor emisi dan kategori aktivitas bisa disesuaikan dengan kebutuhan pelaporan perusahaan.'}
+                      : 'Estimasi ini bersifat demo. Di dasbor penuh, faktor emisi dan kategori aktivitas bisa disesuaikan dengan kebutuhan pelaporan perusahaan.'}
                   </p>
                 </div>
                 {isTrackingLocked ? (

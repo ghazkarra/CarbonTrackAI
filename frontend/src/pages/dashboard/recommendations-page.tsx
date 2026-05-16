@@ -8,9 +8,11 @@ import { Input } from '@/components/ui/input'
 import { LoadingButton } from '@/components/ui/loading-button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { translateCategory } from '@/features/alerts/components/alert-recommendation-accordion'
 import type { Recommendation } from '@/features/recommendations/types'
 import { apiRequest } from '@/lib/api'
 import { getStoredToken } from '@/lib/auth'
+import { getCurrentReportMonth } from '@/lib/utils'
 
 function translateRecommendationStatus(status: string) {
   const normalized = status.toLowerCase()
@@ -23,6 +25,7 @@ function translateRecommendationStatus(status: string) {
 
 function translatePriority(priority: string) {
   const normalized = priority.toLowerCase()
+  if (normalized === 'critical') return 'Kritis'
   if (normalized === 'high') return 'Tinggi'
   if (normalized === 'medium') return 'Sedang'
   if (normalized === 'low') return 'Rendah'
@@ -33,7 +36,7 @@ function translatePriority(priority: string) {
 export function RecommendationsPage() {
   const token = getStoredToken()
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
-  const [reportMonth, setReportMonth] = useState('2025-02')
+  const [reportMonth, setReportMonth] = useState(getCurrentReportMonth)
   const [completionNotes, setCompletionNotes] = useState<Record<number, string>>({})
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -73,10 +76,10 @@ export function RecommendationsPage() {
         token,
         body: JSON.stringify({ report_month: reportMonth }),
       })
-      setMessage(`${data.length} rekomendasi berhasil dibuat.`)
+      setMessage(`Regenerasi selesai: ${data.length} rekomendasi disiapkan ulang.`)
       await loadRecommendations()
     } catch (generateError) {
-      setError(generateError instanceof Error ? generateError.message : 'Gagal membuat rekomendasi')
+      setError(generateError instanceof Error ? generateError.message : 'Gagal meregenerasi peringatan dan rekomendasi')
     } finally {
       setIsGenerating(false)
     }
@@ -117,11 +120,11 @@ export function RecommendationsPage() {
         <div>
           <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Rekomendasi</Badge>
           <h1 className="text-4xl font-semibold tracking-tight">Aksi pengurangan emisi</h1>
-          <p className="mt-3 text-base text-muted-foreground">Buat rekomendasi berbasis aturan dan tandai aksi yang sudah selesai.</p>
+          <p className="mt-3 text-base text-muted-foreground">Regenerasi peringatan dan rekomendasi untuk bulan terpilih, lalu tandai aksi yang sudah selesai.</p>
         </div>
         <div className="flex gap-2">
           <MonthPicker value={reportMonth} onChange={setReportMonth} className="w-40" ariaLabel="Bulan laporan" />
-          <LoadingButton onClick={generateRecommendations} isLoading={isGenerating}>Buat</LoadingButton>
+          <LoadingButton onClick={generateRecommendations} isLoading={isGenerating}>Regenerasi</LoadingButton>
         </div>
       </div>
 
@@ -151,6 +154,7 @@ export function RecommendationsPage() {
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{translatePriority(recommendation.priority)}</Badge>
                     <Badge className="bg-primary/10 text-primary hover:bg-primary/15">{translateRecommendationStatus(recommendation.status)}</Badge>
+                    <Badge variant="outline">{translateCategory(recommendation.category)}</Badge>
                   </div>
                   <p className="truncate text-lg font-semibold">{recommendation.recommendation_title}</p>
                   <p className="mt-1 truncate text-base text-muted-foreground">{recommendation.related_machine_name ?? 'Rekomendasi umum'}</p>

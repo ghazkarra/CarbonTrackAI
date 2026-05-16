@@ -6,80 +6,95 @@ from app.models.alert import Alert
 from app.models.machine_usage import MachineUsageRecord
 from app.models.recommendation import Recommendation
 from app.models.user import User
+from app.services.alert_service import generate_alerts_for_usage
 from app.services.llm_service import generate_recommendations_with_llm
 from app.services.rag_retrieval_service import retrieve_machine_context
 from app.services.savings_service import apply_savings_estimate
 
 
 PRIORITY_ORDER = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+ALLOWED_CATEGORIES = {"energy_efficiency", "maintenance", "operation", "equipment_upgrade", "safety", "reporting"}
+ALLOWED_PRIORITIES = {"low", "medium", "high", "critical"}
+ALLOWED_IMPACTS = {"low", "medium", "high"}
 
 
 def generate_recommendations(db: Session, current_user: User, report_month: str | None = None, machine_usage_id: int | None = None) -> list[Recommendation]:
     query = (
-        db.query(Alert)
-        .options(selectinload(Alert.machine_usage), selectinload(Alert.recommendations))
-        .filter(Alert.company_id == current_user.company_id)
+        db.query(MachineUsageRecord)
+        .options(selectinload(MachineUsageRecord.calculation))
+        .filter(MachineUsageRecord.company_id == current_user.company_id)
     )
     if machine_usage_id:
-        query = query.filter(Alert.machine_usage_id == machine_usage_id)
+        query = query.filter(MachineUsageRecord.id == machine_usage_id)
     if report_month:
-        query = query.join(MachineUsageRecord, MachineUsageRecord.id == Alert.machine_usage_id).filter(MachineUsageRecord.report_month == report_month)
+        query = query.filter(MachineUsageRecord.report_month == report_month)
 
-    alerts = query.all()
+    records = query.order_by(MachineUsageRecord.created_at.desc()).all()
+    recommendations: list[Recommendation] = []
+    for record in records:
+        recommendations.extend(regenerate_usage_alerts_and_recommendations(db, record, delete_existing=True))
+
+    db.commit()
+    return recommendations
+
+
+def regenerate_usage_alerts_and_recommendations(db: Session, record: MachineUsageRecord, delete_existing: bool = True) -> list[Recommendation]:
+    if delete_existing:
+        delete_usage_alerts_and_recommendations(db, record.id)
+
+    alerts = generate_alerts_for_usage(db, record)
     alerts.sort(key=lambda alert: (PRIORITY_ORDER.get(alert.severity, 0), alert.created_at), reverse=True)
 
     recommendations: list[Recommendation] = []
     for alert in alerts:
-        record = alert.machine_usage
+        recommendations.extend(create_recommendations_for_alert(db, alert, record))
+    return recommendations
+
+
+def delete_usage_alerts_and_recommendations(db: Session, usage_id: int) -> None:
+    alert_ids = [row.id for row in db.query(Alert.id).filter(Alert.machine_usage_id == usage_id).all()]
+    if alert_ids:
+        db.query(Recommendation).filter(Recommendation.alert_id.in_(alert_ids)).delete(synchronize_session=False)
+    db.query(Recommendation).filter(Recommendation.machine_usage_id == usage_id).delete(synchronize_session=False)
+    db.query(Alert).filter(Alert.machine_usage_id == usage_id).delete(synchronize_session=False)
+
+
+def create_recommendations_for_alert(db: Session, alert: Alert, record: MachineUsageRecord | None) -> list[Recommendation]:
+    recommendations: list[Recommendation] = []
+    source_context = {"source": "rule_based_mvp", "alert_id": alert.id}
+    candidates = build_recommendations_for_alert(alert, record)
+    try:
+        retrieved_context = retrieve_machine_context(record) if record is not None else {}
+        llm_recommendations = generate_recommendations_with_llm(machine_usage_to_dict(record), calculation_to_dict(record), retrieved_context)
+        if llm_recommendations:
+            candidates = [
+                normalize_llm_recommendation(item, alert, record, fallback_index=index)
+                for index, item in enumerate(llm_recommendations[:3])
+            ]
+            source_context = {"source": "llm_with_rag", "alert_id": alert.id, "retrieved_context": retrieved_context}
+    except Exception:
         source_context = {"source": "rule_based_mvp", "alert_id": alert.id}
-        candidates = build_recommendations_for_alert(alert, record)
-        try:
-            retrieved_context = retrieve_machine_context(record) if record is not None else {}
-            llm_recommendations = generate_recommendations_with_llm(machine_usage_to_dict(record), calculation_to_dict(record), retrieved_context)
-            if llm_recommendations:
-                candidates = [
-                    normalize_llm_recommendation(item, alert, record, fallback_index=index)
-                    for index, item in enumerate(llm_recommendations[:3])
-                ]
-                source_context = {"source": "llm_with_rag", "alert_id": alert.id, "retrieved_context": retrieved_context}
-        except Exception:
-            source_context = {"source": "rule_based_mvp", "alert_id": alert.id}
 
-        for title, description, category, priority, impact in candidates:
-            existing = (
-                db.query(Recommendation)
-                .filter(
-                    Recommendation.company_id == current_user.company_id,
-                    Recommendation.alert_id == alert.id,
-                    Recommendation.recommendation_title == title,
-                )
-                .first()
-            )
-            if existing:
-                apply_savings_estimate(existing, record)
-                recommendations.append(existing)
-                continue
+    for title, description, category, priority, impact in candidates:
+        recommendation = Recommendation(
+            company_id=alert.company_id,
+            alert_id=alert.id,
+            machine_usage_id=alert.machine_usage_id,
+            recommendation_title=title,
+            recommendation_description=description,
+            category=category,
+            priority=priority,
+            estimated_impact=impact,
+            related_machine_name=record.machine_name if record is not None else None,
+            status="active",
+            is_completed=False,
+            source_context_json=source_context,
+        )
+        apply_savings_estimate(recommendation, record)
+        db.add(recommendation)
+        db.flush()
+        recommendations.append(recommendation)
 
-            recommendation = Recommendation(
-                company_id=current_user.company_id,
-                alert_id=alert.id,
-                machine_usage_id=alert.machine_usage_id,
-                recommendation_title=title,
-                recommendation_description=description,
-                category=category,
-                priority=priority,
-                estimated_impact=impact,
-                related_machine_name=record.machine_name if record is not None else None,
-                status="active",
-                is_completed=False,
-                source_context_json=source_context,
-            )
-            apply_savings_estimate(recommendation, record)
-            db.add(recommendation)
-            db.flush()
-            recommendations.append(recommendation)
-
-    db.commit()
     return recommendations
 
 
@@ -89,9 +104,9 @@ def normalize_llm_recommendation(item: dict, alert: Alert, record: MachineUsageR
     return (
         str(item.get("recommendation_title") or title),
         str(item.get("recommendation_description") or description),
-        normalize_choice(str(item.get("category") or category), {"energy_efficiency", "maintenance", "operation", "equipment_upgrade", "safety", "reporting"}, category),
-        normalize_choice(str(item.get("priority") or priority), {"low", "medium", "high", "critical"}, priority),
-        normalize_choice(str(item.get("estimated_impact") or impact), {"low", "medium", "high"}, impact),
+        normalize_choice(str(item.get("category") or category), ALLOWED_CATEGORIES, category),
+        normalize_choice(str(item.get("priority") or priority), ALLOWED_PRIORITIES, priority),
+        normalize_choice(str(item.get("estimated_impact") or impact), ALLOWED_IMPACTS, impact),
     )
 
 
@@ -137,52 +152,52 @@ def build_recommendations_for_alert(alert: Alert, record: MachineUsageRecord | N
     severity_priority = "high" if alert.severity in {"critical", "high"} else "medium" if alert.severity == "warning" else "low"
     severity_impact = "high" if alert.severity in {"critical", "high"} else "medium" if alert.severity == "warning" else "low"
 
-    if "high energy" in alert_type:
+    if "pemakaian energi" in alert_type or "high energy" in alert_type:
         return [
             (
-                f"Optimize operating schedule for {machine}",
-                f"Review idle windows and shift non-critical operation for {machine} to reduce avoidable kWh consumption.",
+                f"Optimalkan jadwal operasi {machine}",
+                f"Tinjau jam idle dan geser operasi non-kritis {machine} agar konsumsi kWh yang tidak perlu bisa dikurangi.",
                 "energy_efficiency",
                 severity_priority,
                 severity_impact,
             ),
             (
-                f"Audit load profile for {machine}",
-                "Compare actual load, rated power, and operator schedule so abnormal consumption can be isolated before the next reporting period.",
+                f"Audit pola beban {machine}",
+                "Bandingkan beban aktual, daya terpasang, dan jadwal operator agar konsumsi tidak normal dapat diisolasi sebelum periode pelaporan berikutnya.",
                 "operation",
                 "medium",
                 "medium",
             ),
         ]
-    if "missing data" in alert_type:
+    if "data pemakaian" in alert_type or "missing data" in alert_type:
         return [
             (
-                f"Validate usage hours for {machine}",
-                "Confirm whether usage hours are genuinely zero or missing from the source log before using this record for reporting.",
+                f"Validasi jam pemakaian {machine}",
+                "Pastikan jam pemakaian benar-benar nol atau belum tercatat di log sumber sebelum data ini digunakan untuk pelaporan.",
                 "reporting",
                 "low",
                 "low",
             ),
             (
-                f"Attach evidence for idle status of {machine}",
-                "Add meter, shift, or maintenance evidence so zero-hour records can be distinguished from incomplete input.",
+                f"Lampirkan bukti status idle {machine}",
+                "Tambahkan bukti meter, jadwal shift, atau catatan perawatan agar data nol jam dapat dibedakan dari input yang belum lengkap.",
                 "reporting",
                 "medium",
                 "medium",
             ),
         ]
-    if "power mismatch" in alert_type:
+    if "ketidaksesuaian daya" in alert_type or "power mismatch" in alert_type:
         return [
             (
-                f"Reconcile power and kWh formula for {machine}",
-                "Check watt, kW, quantity, usage hours, and energy kWh so the calculated value matches the submitted record.",
+                f"Cocokkan rumus daya dan kWh untuk {machine}",
+                "Periksa watt, kW, jumlah mesin, jam pemakaian, dan energi kWh agar nilai perhitungan sesuai dengan data yang dikirim.",
                 "reporting",
                 "medium",
                 "medium",
             ),
             (
-                f"Standardize input template for {machine}",
-                "Use the CSV formula fields consistently to reduce manual differences between power and energy values.",
+                f"Standarkan template input {machine}",
+                "Gunakan field rumus CSV secara konsisten untuk mengurangi selisih manual antara nilai daya dan energi.",
                 "operation",
                 "low",
                 "low",
@@ -190,7 +205,7 @@ def build_recommendations_for_alert(alert: Alert, record: MachineUsageRecord | N
         ]
     return [
         (
-            alert.recommended_action or f"Review alert action for {machine}",
+            alert.recommended_action or f"Tinjau tindakan awal untuk {machine}",
             alert.message,
             "operation",
             severity_priority,

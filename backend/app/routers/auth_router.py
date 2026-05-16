@@ -25,7 +25,7 @@ def to_profile(user: User) -> UserProfile:
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse:
     user = db.query(User).filter(User.email == payload.email).first()
     if user is None or not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email atau kata sandi tidak valid")
     return LoginResponse(access_token=create_access_token(str(user.id)), user=to_profile(user))
 
 

@@ -11,8 +11,8 @@ export function RegisterPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <BrandMark className="mx-auto mb-3 size-12 rounded-[20px]" iconClassName="size-7" />
-          <CardTitle>Buat workspace perusahaan</CardTitle>
-          <CardDescription>Mulai pantau emisi dengan dashboard CarbonTrackAI.</CardDescription>
+          <CardTitle>Buat ruang kerja perusahaan</CardTitle>
+          <CardDescription>Mulai pantau emisi dengan dasbor CarbonTrackAI.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
@@ -32,10 +32,10 @@ export function RegisterPage() {
             <Input id="password" type="password" />
           </div>
           <Button className="w-full" asChild>
-            <Link to="/dashboard">Buat workspace</Link>
+            <Link to="/dashboard">Buat ruang kerja</Link>
           </Button>
           <p className="text-center text-sm text-muted-foreground">
-            Sudah terdaftar? <Link to="/login" className="text-primary hover:underline">Login</Link>
+            Sudah terdaftar? <Link to="/login" className="text-primary hover:underline">Masuk</Link>
           </p>
         </CardContent>
       </Card>

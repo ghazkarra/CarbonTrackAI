@@ -5,7 +5,7 @@ import { EmissionsChart } from '@/features/dashboard/components/emissions-chart'
 import { MetricCard } from '@/features/dashboard/components/metric-card'
 import type { DashboardSummary } from '@/features/dashboard/types'
 import type { AlertsOverview, AlertWithRecommendations } from '@/features/alerts/types'
-import { getSeverityVisual, severityOrder, translateStatus } from '@/features/alerts/components/alert-recommendation-accordion'
+import { getSeverityVisual, severityOrder, translateAlertType, translateStatus } from '@/features/alerts/components/alert-recommendation-accordion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,6 +13,7 @@ import { MonthPicker } from '@/components/ui/date-picker'
 import { Skeleton } from '@/components/ui/skeleton'
 import { apiRequest } from '@/lib/api'
 import { getStoredToken } from '@/lib/auth'
+import { getCurrentReportMonth } from '@/lib/utils'
 
 const defaultSummary: DashboardSummary = {
   total_energy_kwh: '0',
@@ -31,7 +32,7 @@ function formatNumber(value: string | number, fractionDigits = 2) {
 export function OverviewPage() {
   const [summary, setSummary] = useState<DashboardSummary>(defaultSummary)
   const [alertsOverview, setAlertsOverview] = useState<AlertsOverview | null>(null)
-  const [periodMonth, setPeriodMonth] = useState('2025-02')
+  const [periodMonth, setPeriodMonth] = useState(getCurrentReportMonth)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -93,7 +94,7 @@ export function OverviewPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Badge className="bg-primary/10 text-primary hover:bg-primary/15">Dashboard Admin</Badge>
+            <Badge className="bg-primary/10 text-primary hover:bg-primary/15">Dasbor Admin</Badge>
             <Badge variant="outline" className="border-primary/30 text-primary">CarbonTrackAI</Badge>
           </div>
           <h1 className="text-4xl font-semibold tracking-tight">Ringkasan operasional karbon</h1>
@@ -259,7 +260,7 @@ function TopAlertCard({ alert, isLoading }: { alert: AlertWithRecommendations | 
           </div>
         </div>
         <div>
-          <p className="font-semibold leading-snug">{alert.alert_type}</p>
+          <p className="font-semibold leading-snug">{translateAlertType(alert.alert_type)}</p>
           <p className="mt-2 line-clamp-4 text-sm text-muted-foreground">{alert.message}</p>
         </div>
         <div className="rounded-md bg-muted/55 p-3 text-sm">

@@ -29,7 +29,7 @@ def list_recommendations(status_filter: str | None = None, current_user: User = 
 def complete(recommendation_id: int, payload: RecommendationCompleteRequest, current_user: User = Depends(require_operator), db: Session = Depends(get_db)) -> Recommendation:
     recommendation = complete_recommendation(db, recommendation_id, current_user, payload.completion_note if payload.is_completed else None)
     if recommendation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recommendation not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rekomendasi tidak ditemukan")
     return recommendation
 
 
@@ -37,5 +37,5 @@ def complete(recommendation_id: int, payload: RecommendationCompleteRequest, cur
 def dismiss(recommendation_id: int, current_user: User = Depends(require_operator), db: Session = Depends(get_db)) -> Recommendation:
     recommendation = dismiss_recommendation(db, recommendation_id, current_user)
     if recommendation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recommendation not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rekomendasi tidak ditemukan")
     return recommendation

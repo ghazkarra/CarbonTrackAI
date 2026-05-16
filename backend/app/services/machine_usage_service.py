@@ -12,7 +12,6 @@ from app.models.import_log import ImportLog
 from app.models.recommendation import Recommendation
 from app.models.user import User
 from app.schemas.machine_usage_schema import ImportCsvResponse, ImportRowResult, MachineUsageCreate, MachineUsageUpdate
-from app.services.alert_service import generate_alerts_for_usage
 from app.services.calculation_service import (
     attach_retrieved_context,
     build_formula_warning,
@@ -21,6 +20,7 @@ from app.services.calculation_service import (
     create_emission_calculation,
 )
 from app.services.rag_retrieval_service import retrieve_machine_context
+from app.services.recommendation_service import delete_usage_alerts_and_recommendations, regenerate_usage_alerts_and_recommendations
 from app.services.savings_service import build_savings_summary
 
 
@@ -35,6 +35,13 @@ EXPECTED_CSV_HEADER = [
     "usage_hours",
     "energy_kwh",
 ]
+
+FIELD_LABELS = {
+    "machine_power_watt": "Daya watt",
+    "machine_power_kw": "Daya kW",
+    "usage_hours": "Jam pemakaian",
+    "energy_kwh": "Energi kWh",
+}
 
 
 def create_machine_usage(db: Session, payload: MachineUsageCreate, current_user: User) -> MachineUsageRecord:
@@ -70,7 +77,7 @@ def create_machine_usage(db: Session, payload: MachineUsageCreate, current_user:
         attach_retrieved_context(calculation, retrieve_machine_context(record))
     except Exception:
         calculation.confidence_label = "medium"
-    generate_alerts_for_usage(db, record)
+    regenerate_usage_alerts_and_recommendations(db, record, delete_existing=True)
     db.commit()
     db.refresh(record)
     return record
@@ -100,7 +107,6 @@ def update_machine_usage(db: Session, usage_id: int, payload: MachineUsageUpdate
     ]
     warning_text = "; ".join([warning for warning in warnings if warning]) or None
 
-    delete_usage_alerts_and_recommendations(db, record.id)
     record.report_month = report_month
     record.row_no = row_no
     record.machine_name = machine_name
@@ -119,7 +125,7 @@ def update_machine_usage(db: Session, usage_id: int, payload: MachineUsageUpdate
         attach_retrieved_context(calculation, retrieve_machine_context(record))
     except Exception:
         calculation.confidence_label = "medium"
-    generate_alerts_for_usage(db, record)
+    regenerate_usage_alerts_and_recommendations(db, record, delete_existing=True)
     db.commit()
     db.refresh(record)
     return record
@@ -135,14 +141,6 @@ def delete_machine_usage(db: Session, usage_id: int, current_user: User) -> dict
     db.delete(record)
     db.commit()
     return response
-
-
-def delete_usage_alerts_and_recommendations(db: Session, usage_id: int) -> None:
-    alert_ids = [row.id for row in db.query(Alert.id).filter(Alert.machine_usage_id == usage_id).all()]
-    if alert_ids:
-        db.query(Recommendation).filter(Recommendation.alert_id.in_(alert_ids)).delete(synchronize_session=False)
-    db.query(Recommendation).filter(Recommendation.machine_usage_id == usage_id).delete(synchronize_session=False)
-    db.query(Alert).filter(Alert.machine_usage_id == usage_id).delete(synchronize_session=False)
 
 
 def get_machine_usage_detail(db: Session, usage_id: int, current_user: User) -> dict | None:
@@ -204,22 +202,23 @@ def machine_usage_record_to_dict(record: MachineUsageRecord) -> dict:
 
 
 def parse_decimal(value: str | None, field_name: str, required: bool = True) -> Decimal | None:
+    field_label = FIELD_LABELS.get(field_name, field_name)
     if value is None or value == "":
         if required:
-            raise ValueError(f"{field_name} is required")
+            raise ValueError(f"{field_label} wajib diisi")
         return None
     try:
         decimal_value = Decimal(value)
     except InvalidOperation as exc:
-        raise ValueError(f"{field_name} must be numeric") from exc
+        raise ValueError(f"{field_label} harus berupa angka") from exc
     if decimal_value < 0:
-        raise ValueError(f"{field_name} must be non-negative")
+        raise ValueError(f"{field_label} tidak boleh negatif")
     return decimal_value
 
 
 async def import_machine_usage_csv(db: Session, file: UploadFile, current_user: User) -> ImportCsvResponse:
     if not file.filename or not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only CSV files are allowed")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Hanya file CSV yang diizinkan")
 
     content = (await file.read()).decode("utf-8-sig")
     reader = csv.DictReader(StringIO(content))
@@ -229,7 +228,7 @@ async def import_machine_usage_csv(db: Session, file: UploadFile, current_user: 
                 company_id=current_user.company_id,
                 file_name=file.filename,
                 status="error",
-                message="Invalid CSV header",
+                message="Header CSV tidak valid",
                 summary_json={"expected": EXPECTED_CSV_HEADER, "received": reader.fieldnames},
                 created_by=current_user.id,
             )
@@ -237,7 +236,7 @@ async def import_machine_usage_csv(db: Session, file: UploadFile, current_user: 
         db.commit()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"message": "Invalid CSV header", "expected": EXPECTED_CSV_HEADER, "received": reader.fieldnames},
+            detail={"message": "Header CSV tidak valid", "expected": EXPECTED_CSV_HEADER, "received": reader.fieldnames},
         )
 
     rows = list(reader)
@@ -302,7 +301,7 @@ async def import_machine_usage_csv(db: Session, file: UploadFile, current_user: 
                 attach_retrieved_context(calculation, retrieve_machine_context(record))
             except Exception:
                 calculation.confidence_label = "medium"
-            generate_alerts_for_usage(db, record)
+            regenerate_usage_alerts_and_recommendations(db, record, delete_existing=True)
             if warning_text:
                 warning_rows += 1
                 status_text = "warning"
@@ -323,7 +322,7 @@ async def import_machine_usage_csv(db: Session, file: UploadFile, current_user: 
             company_id=current_user.company_id,
             file_name=file.filename,
             status="completed_with_errors" if error_rows else "completed",
-            message="CSV import processed",
+            message="Impor CSV selesai diproses",
             summary_json={
                 "total_rows": len(rows),
                 "valid_rows": valid_rows,

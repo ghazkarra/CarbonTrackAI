@@ -8,6 +8,10 @@ from app.models.machine_usage import MachineUsageRecord
 
 
 DECIMAL_PLACES = Decimal("0.0001")
+FIELD_LABELS = {
+    "machine_power_kw": "Daya kW",
+    "energy_kwh": "Energi kWh",
+}
 
 
 def quantize(value: Decimal, places: Decimal = DECIMAL_PLACES) -> Decimal:
@@ -23,13 +27,14 @@ def calculate_energy_kwh(machine_quantity: int, machine_power_kw: Decimal, usage
 
 
 def build_formula_warning(field_name: str, provided: Decimal | None, calculated: Decimal) -> str | None:
+    field_label = FIELD_LABELS.get(field_name, field_name)
     if provided is None:
         return None
     if calculated == 0:
-        return None if provided == 0 else f"{field_name} differs from calculated value 0"
+        return None if provided == 0 else f"{field_label} berbeda dari nilai perhitungan 0"
     diff_ratio = abs(provided - calculated) / calculated
     if diff_ratio > Decimal("0.02"):
-        return f"{field_name} differs from calculated value {calculated} by more than 2%"
+        return f"{field_label} berbeda dari nilai perhitungan {calculated} lebih dari 2%"
     return None
 
 

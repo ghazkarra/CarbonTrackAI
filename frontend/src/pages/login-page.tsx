@@ -39,7 +39,7 @@ export function LoginPage() {
 
       navigate(response.user.role === 'operator' ? from ?? '/dashboard' : '/dashboard/superadmin', { replace: true })
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : 'Login gagal. Coba periksa email dan kata sandi.')
+      setError(loginError instanceof Error ? loginError.message : 'Masuk gagal. Coba periksa email dan kata sandi.')
     } finally {
       setIsSubmitting(false)
     }
@@ -93,7 +93,7 @@ export function LoginPage() {
                 </span>
                 <div>
                   <p className="text-xs font-semibold text-emerald-700">Akses aman.</p>
-                  <p className="text-xs text-slate-500">Login CarbonTrackAI</p>
+                  <p className="text-xs text-slate-500">Masuk CarbonTrackAI</p>
                 </div>
               </div>
               <h2 className="text-2xl font-black text-center text-slate-950">Selamat datang kembali!</h2>

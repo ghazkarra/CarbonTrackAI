@@ -40,12 +40,12 @@ export function EmissionsChart() {
             }}
           />
           <Area type="monotone" dataKey="target" stroke="var(--muted-foreground)" strokeWidth={2} fill="url(#targetEmissions)" name="Target" />
-          <Area type="monotone" dataKey="emissions" stroke="var(--primary)" strokeWidth={3} fill="url(#actualEmissions)" name="Actual" />
+          <Area type="monotone" dataKey="emissions" stroke="var(--primary)" strokeWidth={3} fill="url(#actualEmissions)" name="Aktual" />
         </AreaChart>
       </ResponsiveContainer>
       </div>
       <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-2"><span className="size-2 rounded-md bg-primary" />Actual</span>
+        <span className="flex items-center gap-2"><span className="size-2 rounded-md bg-primary" />Aktual</span>
         <span className="flex items-center gap-2"><span className="size-2 rounded-md bg-muted-foreground" />Target</span>
       </div>
     </div>

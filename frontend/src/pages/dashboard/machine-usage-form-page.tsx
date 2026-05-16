@@ -16,9 +16,10 @@ import { machineUsageSchema } from '@/features/machine-usage/schemas'
 import type { ImportCsvResponse, MachineUsageDetail, MachineUsageRecord } from '@/features/machine-usage/types'
 import { apiRequest, getApiErrorMessage } from '@/lib/api'
 import { getStoredToken } from '@/lib/auth'
+import { getCurrentReportMonth } from '@/lib/utils'
 
 const initialForm = {
-  report_month: '2025-02',
+  report_month: getCurrentReportMonth(),
   row_no: '1',
   machine_name: 'Mesin Coding',
   machine_location: 'Production',
@@ -129,7 +130,7 @@ export function MachineUsageFormPage({ mode = 'create' }: MachineUsageFormPagePr
         body: formData,
       })
       setImportResult(result)
-      setMessage(`CSV berhasil diimpor: ${result.valid_rows} valid, ${result.warning_rows} peringatan, ${result.error_rows} error.`)
+      setMessage(`CSV berhasil diimpor: ${result.valid_rows} valid, ${result.warning_rows} peringatan, ${result.error_rows} galat.`)
     } catch (uploadError) {
       setError(getApiErrorMessage(uploadError, 'Gagal mengunggah CSV'))
     } finally {
@@ -142,8 +143,8 @@ export function MachineUsageFormPage({ mode = 'create' }: MachineUsageFormPagePr
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Pemakaian Mesin</Badge>
-          <h1 className="text-4xl font-semibold tracking-tight">{isEdit ? 'Edit machine usage' : 'Input machine usage'}</h1>
-          <p className="mt-3 text-base text-muted-foreground">Isi detail pemakaian mesin, lalu sistem akan menghitung kWh, emisi, alerts, dan rekomendasi terkait.</p>
+          <h1 className="text-4xl font-semibold tracking-tight">{isEdit ? 'Edit Pemakaian Mesin' : 'Input Pemakaian Mesin'}</h1>
+          <p className="mt-3 text-base text-muted-foreground">Isi detail pemakaian mesin, lalu sistem akan menghitung kWh, emisi, peringatan, dan rekomendasi terkait.</p>
         </div>
         <Button variant="outline" asChild>
           <Link to="/dashboard/machine-usage"><ArrowLeft className="size-4" /> Kembali</Link>
@@ -164,7 +165,7 @@ export function MachineUsageFormPage({ mode = 'create' }: MachineUsageFormPagePr
             </div>
             {!isEdit ? (
               <TabsList className="w-full shrink-0 md:w-fit">
-                <TabsTrigger value="form">Form input</TabsTrigger>
+                <TabsTrigger value="form">Input formulir</TabsTrigger>
                 <TabsTrigger value="csv">Unggah CSV</TabsTrigger>
               </TabsList>
             ) : null}
@@ -228,7 +229,7 @@ export function MachineUsageFormPage({ mode = 'create' }: MachineUsageFormPagePr
                 {importResult ? (
                   <div className="rounded-md border p-4 text-sm">
                     <p className="font-medium">Hasil impor</p>
-                    <p className="mt-1 text-muted-foreground">Total {importResult.total_rows}, valid {importResult.valid_rows}, peringatan {importResult.warning_rows}, error {importResult.error_rows}</p>
+                    <p className="mt-1 text-muted-foreground">Total {importResult.total_rows}, valid {importResult.valid_rows}, peringatan {importResult.warning_rows}, galat {importResult.error_rows}</p>
                   </div>
                 ) : null}
               </TabsContent>

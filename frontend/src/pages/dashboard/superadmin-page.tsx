@@ -278,7 +278,7 @@ export function SuperadminPage() {
               <Dialog.Close asChild>
                 <Button variant="outline" disabled={isSaving}>Batal</Button>
               </Dialog.Close>
-              <LoadingButton className="h-11 text-base" isLoading={isSaving} onClick={createUser}>Submit Akun</LoadingButton>
+              <LoadingButton className="h-11 text-base" isLoading={isSaving} onClick={createUser}>Simpan Akun</LoadingButton>
             </div>
           </Dialog.Content>
         </Dialog.Portal>

@@ -57,7 +57,7 @@ export function MachineUsageDetailPage() {
       })
       await loadDetail()
     } catch (generateError) {
-      setError(getApiErrorMessage(generateError, 'Gagal membuat rekomendasi untuk mesin ini'))
+      setError(getApiErrorMessage(generateError, 'Gagal meregenerasi peringatan dan rekomendasi untuk mesin ini'))
     } finally {
       setIsGenerating(false)
     }
@@ -83,7 +83,7 @@ export function MachineUsageDetailPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Detail Mesin</Badge>
-          <h1 className="text-4xl font-semibold tracking-tight">{detail?.machine_name ?? 'Machine usage detail'}</h1>
+          <h1 className="text-4xl font-semibold tracking-tight">{detail?.machine_name ?? 'Detail pemakaian mesin'}</h1>
           <p className="mt-3 text-base text-muted-foreground">{detail ? `${detail.machine_location} · ${detail.report_month}` : 'Statistik penggunaan dan peluang penghematan khusus mesin ini.'}</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -143,13 +143,13 @@ export function MachineUsageDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Informasi pemakaian</CardTitle>
-              <CardDescription className="text-base">Nilai input dan hasil validasi untuk record ini.</CardDescription>
+              <CardDescription className="text-base">Nilai input dan hasil validasi untuk data ini.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm md:grid-cols-2">
               <InfoRow label="Daya watt" value={`${numberFormatter.format(Number(detail.machine_power_watt))} W`} />
               <InfoRow label="Daya kW" value={`${numberFormatter.format(Number(detail.machine_power_kw))} kW`} />
               <InfoRow label="Energi" value={`${numberFormatter.format(Number(detail.energy_kwh))} kWh`} />
-              <InfoRow label="Sumber data" value={detail.data_source === 'csv_upload' ? 'CSV upload' : 'Form input'} />
+              <InfoRow label="Sumber data" value={detail.data_source === 'csv_upload' ? 'Unggah CSV' : 'Input formulir'} />
               <InfoRow label="Status validasi" value={translateStatus(detail.validation_status)} />
               <InfoRow label="Tanggal input" value={new Date(detail.created_at).toLocaleDateString('id-ID')} />
               {detail.validation_message ? <p className="rounded-md bg-muted p-3 text-muted-foreground md:col-span-2">{detail.validation_message}</p> : null}
@@ -159,18 +159,18 @@ export function MachineUsageDetailPage() {
           <Card>
             <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
               <div>
-                <CardTitle className="text-xl">Alerts & recommendations mesin</CardTitle>
-                <CardDescription className="text-base">Daftar alert dan rekomendasi yang hanya terkait mesin ini.</CardDescription>
+                <CardTitle className="text-xl">Peringatan & rekomendasi mesin</CardTitle>
+                <CardDescription className="text-base">Daftar peringatan dan rekomendasi yang hanya terkait mesin ini.</CardDescription>
               </div>
               <LoadingButton variant="outline" isLoading={isGenerating} onClick={generateRecommendations}>
-                <Lightbulb className="size-4" /> Buat rekomendasi
+                <Lightbulb className="size-4" /> Regenerasi
               </LoadingButton>
             </CardHeader>
             <CardContent>
               <AlertRecommendationAccordion
                 alerts={alertItems}
                 getRecommendations={(alert) => alert.recommendations}
-                emptyMessage="Belum ada alert untuk mesin ini."
+                emptyMessage="Belum ada peringatan untuk mesin ini."
               />
             </CardContent>
           </Card>

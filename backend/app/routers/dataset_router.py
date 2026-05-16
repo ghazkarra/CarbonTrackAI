@@ -26,7 +26,7 @@ def list_dataset_files(_: User = Depends(require_superadmin)) -> list[dict]:
 @router.post("/upload")
 async def upload_dataset(file: UploadFile = File(...), _: User = Depends(require_superadmin)) -> dict:
     if not file.filename or not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only CSV files are allowed")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Hanya file CSV yang diizinkan")
 
     safe_name = Path(file.filename).name.replace("\\", "_").replace("/", "_")
     target_dir = dataset_dir()

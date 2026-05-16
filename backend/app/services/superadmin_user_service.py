@@ -35,12 +35,12 @@ def _ensure_unique_email(db: Session, email: str, user_id: int | None = None) ->
     if user_id is not None:
         query = query.filter(User.id != user_id)
     if query.first() is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email is already used")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email sudah digunakan")
 
 
 def _ensure_company_exists(db: Session, company_id: int | None) -> None:
     if company_id is not None and db.get(Company, company_id) is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Company not found")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Perusahaan tidak ditemukan")
 
 
 def create_user(db: Session, payload: SuperadminUserCreateRequest) -> SuperadminUserResponse:

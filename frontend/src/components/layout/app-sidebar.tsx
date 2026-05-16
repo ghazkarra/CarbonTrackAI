@@ -17,7 +17,7 @@ type NavItem = {
 const operatorNavItems: NavItem[] = [
   { label: 'Ringkasan', href: '/dashboard', icon: FiGrid, end: true },
   { label: 'Pemakaian Mesin', href: '/dashboard/machine-usage', icon: FiClipboard },
-  { label: 'Alerts & Recommendations', href: '/dashboard/alerts', icon: FiAlertTriangle, activePaths: ['/dashboard/recommendations'] },
+  { label: 'Peringatan & Rekomendasi', href: '/dashboard/alerts', icon: FiAlertTriangle, activePaths: ['/dashboard/recommendations'] },
   { label: 'Laporan', href: '/dashboard/reports', icon: FiFileText },
 ]
 
@@ -101,7 +101,7 @@ export function AppSidebar({ className, role, onToggleSidebar, isCollapsed = fal
                 'w-full rounded-md bg-sidebar-accent/60 p-3 text-left transition hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isCollapsed ? 'grid place-items-center' : 'flex items-center gap-3'
               )}
-              aria-label="Open account menu"
+              aria-label="Buka menu akun"
             >
               <Avatar className="size-9 rounded-md">
                 <AvatarFallback className="rounded-md bg-primary/10 text-xs text-primary">{initials}</AvatarFallback>

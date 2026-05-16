@@ -34,7 +34,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     settings = get_settings()
     credentials_error = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid authentication credentials",
+        detail="Kredensial autentikasi tidak valid",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
@@ -53,13 +53,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 def require_operator(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != "operator":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Operator access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses operator diperlukan")
     if current_user.company_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Operator has no company context")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Operator belum memiliki konteks perusahaan")
     return current_user
 
 
 def require_superadmin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != "superadmin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Superadmin access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses superadmin diperlukan")
     return current_user

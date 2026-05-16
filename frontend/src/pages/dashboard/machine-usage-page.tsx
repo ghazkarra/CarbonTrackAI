@@ -21,7 +21,7 @@ function translateValidationStatus(status: string) {
   const normalized = status.toLowerCase()
   if (normalized === 'valid') return 'Valid'
   if (normalized === 'warning') return 'Peringatan'
-  if (normalized === 'error') return 'Error'
+  if (normalized === 'error') return 'Galat'
   return status
 }
 
@@ -128,7 +128,7 @@ export function MachineUsagePage() {
           <p className="mt-3 text-base text-muted-foreground">Konteks perusahaan: {user?.company_name ?? 'Perusahaan tidak diketahui'}</p>
         </div>
         <Button asChild size="lg">
-          <Link to="/dashboard/machine-usage/new"><Plus className="size-4" /> Tambah machine usage</Link>
+          <Link to="/dashboard/machine-usage/new"><Plus className="size-4" /> Tambah pemakaian mesin</Link>
         </Button>
       </div>
 
@@ -137,8 +137,8 @@ export function MachineUsagePage() {
       <Card>
         <CardHeader className="gap-4">
           <div>
-            <CardTitle className="text-xl">Data table pemakaian</CardTitle>
-            <CardDescription className="text-base">{filteredRecords.length} record ditampilkan, total {numberFormatter.format(totalEnergy)} kWh.</CardDescription>
+            <CardTitle className="text-xl">Tabel data pemakaian</CardTitle>
+            <CardDescription className="text-base">{filteredRecords.length} data ditampilkan, total {numberFormatter.format(totalEnergy)} kWh.</CardDescription>
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_1fr_auto]">
             <Input placeholder="Cari mesin, lokasi, bulan, atau catatan" value={search} onChange={(event) => setSearch(event.target.value)} />
@@ -150,12 +150,12 @@ export function MachineUsagePage() {
               <option value="all">Semua status</option>
               <option value="valid">Valid</option>
               <option value="warning">Peringatan</option>
-              <option value="error">Error</option>
+              <option value="error">Galat</option>
             </select>
             <select className="h-10 rounded-lg border border-input bg-background px-3 text-sm" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
               <option value="all">Semua sumber</option>
-              <option value="form">Form</option>
-              <option value="csv_upload">CSV upload</option>
+              <option value="form">Formulir</option>
+              <option value="csv_upload">Unggah CSV</option>
             </select>
             <select className="h-10 rounded-lg border border-input bg-background px-3 text-sm" value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
               {[5, 10, 20, 50].map((size) => <option key={size} value={size}>{size} / halaman</option>)}
@@ -169,14 +169,14 @@ export function MachineUsagePage() {
                 <SortableHeader label="Mesin" sortKey="machine_name" activeKey={sortKey} direction={sortDirection} onSort={toggleSort} />
                 <SortableHeader label="Lokasi" sortKey="machine_location" activeKey={sortKey} direction={sortDirection} onSort={toggleSort} />
                 <SortableHeader label="Bulan" sortKey="report_month" activeKey={sortKey} direction={sortDirection} onSort={toggleSort} />
-                <th className="py-3 pr-4">Qty</th>
+                <th className="py-3 pr-4">Jumlah</th>
                 <SortableHeader label="kW" sortKey="machine_power_kw" activeKey={sortKey} direction={sortDirection} onSort={toggleSort} />
                 <SortableHeader label="Jam" sortKey="usage_hours" activeKey={sortKey} direction={sortDirection} onSort={toggleSort} />
                 <SortableHeader label="Energi kWh" sortKey="energy_kwh" activeKey={sortKey} direction={sortDirection} onSort={toggleSort} />
                 <SortableHeader label="Status" sortKey="validation_status" activeKey={sortKey} direction={sortDirection} onSort={toggleSort} />
                 <th className="py-3 pr-4">Sumber</th>
                 <SortableHeader label="Dibuat" sortKey="created_at" activeKey={sortKey} direction={sortDirection} onSort={toggleSort} />
-                <th className="py-3 pr-4 text-right">Action</th>
+                <th className="py-3 pr-4 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -196,7 +196,7 @@ export function MachineUsagePage() {
                   <td className="py-3 pr-4">{numberFormatter.format(Number(record.usage_hours))}</td>
                   <td className="py-3 pr-4 font-medium text-primary">{numberFormatter.format(Number(record.energy_kwh))}</td>
                   <td className="py-3 pr-4"><Badge variant="outline">{translateValidationStatus(record.validation_status)}</Badge></td>
-                  <td className="py-3 pr-4 text-muted-foreground">{record.data_source === 'csv_upload' ? 'CSV' : 'Form'}</td>
+                  <td className="py-3 pr-4 text-muted-foreground">{record.data_source === 'csv_upload' ? 'CSV' : 'Formulir'}</td>
                   <td className="py-3 pr-4 text-muted-foreground">{new Date(record.created_at).toLocaleDateString('id-ID')}</td>
                   <td className="py-3 pr-4">
                     <div className="flex justify-end gap-1">
@@ -217,7 +217,7 @@ export function MachineUsagePage() {
           </table>
           {!isLoading && !pageRecords.length ? <p className="py-8 text-sm text-muted-foreground">Belum ada data yang cocok dengan filter ini.</p> : null}
           <div className="mt-4 flex flex-col gap-3 border-t pt-4 md:flex-row md:items-center md:justify-between">
-            <p className="text-sm text-muted-foreground">Halaman {safePage} dari {totalPages} · {filteredRecords.length} record</p>
+            <p className="text-sm text-muted-foreground">Halaman {safePage} dari {totalPages} · {filteredRecords.length} data</p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}><ChevronLeft className="size-4" /> Sebelumnya</Button>
               <Button variant="outline" size="sm" disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>Berikutnya <ChevronRight className="size-4" /></Button>
@@ -228,8 +228,8 @@ export function MachineUsagePage() {
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
-        title="Hapus machine usage?"
-        description="Data pemakaian ini akan dihapus bersama calculation, alerts, dan recommendations terkait."
+        title="Hapus pemakaian mesin?"
+        description="Data pemakaian ini akan dihapus bersama perhitungan, peringatan, dan rekomendasi terkait."
         confirmLabel="Hapus"
         isLoading={pendingDelete ? deletingId === pendingDelete.id : false}
         onOpenChange={(open) => {
@@ -258,7 +258,7 @@ function SortableHeader({ label, sortKey, activeKey, direction, onSort }: Sortab
       <button type="button" className="inline-flex items-center gap-1 hover:text-foreground" onClick={() => onSort(sortKey)}>
         {label}
         <ArrowUpDown className={`size-3.5 ${isActive ? 'text-primary' : ''}`} />
-        {isActive ? <span className="sr-only">{direction === 'asc' ? 'ascending' : 'descending'}</span> : null}
+        {isActive ? <span className="sr-only">{direction === 'asc' ? 'naik' : 'turun'}</span> : null}
       </button>
     </th>
   )

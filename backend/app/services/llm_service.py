@@ -77,22 +77,24 @@ def parse_json_object(content: str) -> dict[str, Any] | None:
 
 def generate_recommendations_with_llm(machine_usage: dict, calculation: dict | None, retrieved_context: dict | None) -> list[dict]:
     prompt = f"""
-You are an industrial emission reduction assistant.
-Use only the provided machine usage data, calculation results, and retrieved context.
-Do not invent emission factors.
-Generate practical recommendations that the user can mark as completed.
-Return JSON only.
+Anda adalah asisten pengurangan emisi industri.
+Gunakan hanya data pemakaian mesin, hasil perhitungan, dan konteks yang diberikan.
+Jangan mengarang faktor emisi, ambang batas, atau data operasional baru.
+Hasilkan rekomendasi praktis yang bisa ditandai selesai oleh pengguna.
+Semua teks yang dibaca pengguna wajib menggunakan Bahasa Indonesia: recommendation_title, recommendation_description, dan related_machine_name.
+Nilai category, priority, dan estimated_impact wajib tetap memakai enum bahasa Inggris sesuai skema.
+Kembalikan JSON saja.
 
-Machine Usage:
+Data Pemakaian Mesin:
 {json.dumps(machine_usage, default=str)}
 
-Calculation:
+Perhitungan:
 {json.dumps(calculation or {}, default=str)}
 
-Retrieved Context:
+Konteks Terambil:
 {json.dumps(retrieved_context or {}, default=str)}
 
-Output JSON shape:
+Skema JSON output:
 {{"recommendations":[{{"recommendation_title":"...","recommendation_description":"...","category":"energy_efficiency|maintenance|operation|equipment_upgrade|safety|reporting","priority":"low|medium|high|critical","estimated_impact":"low|medium|high","related_machine_name":"..."}}]}}
 """
     data = call_llm_json(prompt)
@@ -102,19 +104,19 @@ Output JSON shape:
 
 def explain_alert_with_llm(alert_rule: dict, retrieved_context: dict | None) -> dict | None:
     prompt = f"""
-You are an emission monitoring alert assistant.
-Explain the alert in simple Indonesian.
-Use only the provided triggered values and retrieved context.
-Do not invent thresholds.
-Return JSON only.
+Anda adalah asisten pemantauan peringatan emisi.
+Jelaskan peringatan dalam Bahasa Indonesia yang sederhana dan operasional.
+Gunakan hanya nilai pemicu dan konteks yang diberikan.
+Jangan mengarang ambang batas atau data operasional baru.
+Kembalikan JSON saja.
 
-Alert Rule Result:
+Hasil Aturan Peringatan:
 {json.dumps(alert_rule, default=str)}
 
-Retrieved Context:
+Konteks Terambil:
 {json.dumps(retrieved_context or {}, default=str)}
 
-Output JSON shape:
+Skema JSON output:
 {{"message":"...","recommended_action":"...","severity_reason":"..."}}
 """
     return call_llm_json(prompt)
@@ -122,17 +124,17 @@ Output JSON shape:
 
 def generate_report_summary_with_llm(report_type: str, report_data: dict) -> dict | None:
     prompt = f"""
-You are a sustainability reporting assistant.
-Create a concise Indonesian executive summary for a PDF report.
-Use only the provided report data.
-Do not mention completed recommendations for daily or weekly reports.
-For monthly and annual reports, include completed recommendations summary if provided.
-Return JSON only.
+Anda adalah asisten pelaporan keberlanjutan.
+Buat ringkasan eksekutif singkat dalam Bahasa Indonesia untuk laporan PDF.
+Gunakan hanya data laporan yang diberikan.
+Jangan menyebut rekomendasi selesai untuk laporan harian atau mingguan.
+Untuk laporan bulanan dan tahunan, sertakan ringkasan rekomendasi selesai jika tersedia.
+Kembalikan JSON saja.
 
-Report Type: {report_type}
-Report Data: {json.dumps(report_data, default=str)}
+Jenis Laporan: {report_type}
+Data Laporan: {json.dumps(report_data, default=str)}
 
-Output JSON shape:
+Skema JSON output:
 {{"executive_summary":"...","key_findings":["..."],"management_notes":["..."]}}
 """
     return call_llm_json(prompt)

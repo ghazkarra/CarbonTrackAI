@@ -34,7 +34,7 @@ def list_usage(report_month: str | None = None, current_user: User = Depends(req
 def get_usage_detail(usage_id: int, current_user: User = Depends(require_operator), db: Session = Depends(get_db)) -> dict:
     detail = get_machine_usage_detail(db, usage_id, current_user)
     if detail is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Machine usage record not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data pemakaian mesin tidak ditemukan")
     return detail
 
 
@@ -42,7 +42,7 @@ def get_usage_detail(usage_id: int, current_user: User = Depends(require_operato
 def update_usage(usage_id: int, payload: MachineUsageUpdate, current_user: User = Depends(require_operator), db: Session = Depends(get_db)) -> MachineUsageRecord:
     record = update_machine_usage(db, usage_id, payload, current_user)
     if record is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Machine usage record not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data pemakaian mesin tidak ditemukan")
     return record
 
 
@@ -50,5 +50,5 @@ def update_usage(usage_id: int, payload: MachineUsageUpdate, current_user: User 
 def delete_usage(usage_id: int, current_user: User = Depends(require_operator), db: Session = Depends(get_db)) -> dict:
     record = delete_machine_usage(db, usage_id, current_user)
     if record is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Machine usage record not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data pemakaian mesin tidak ditemukan")
     return record

@@ -70,7 +70,7 @@ def priority_score(priority: str) -> int:
 def get_alert(alert_id: int, current_user: User = Depends(require_operator), db: Session = Depends(get_db)) -> Alert:
     alert = db.get(Alert, alert_id)
     if alert is None or alert.company_id != current_user.company_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Peringatan tidak ditemukan")
     return alert
 
 
@@ -78,5 +78,5 @@ def get_alert(alert_id: int, current_user: User = Depends(require_operator), db:
 def acknowledge(alert_id: int, current_user: User = Depends(require_operator), db: Session = Depends(get_db)) -> Alert:
     alert = acknowledge_alert(db, alert_id, current_user)
     if alert is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Peringatan tidak ditemukan")
     return alert

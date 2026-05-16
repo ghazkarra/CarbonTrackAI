@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import type { ReportFile } from '@/features/reports/types'
 import { apiRequest } from '@/lib/api'
 import { getStoredToken } from '@/lib/auth'
+import { getCurrentReportMonth } from '@/lib/utils'
 
 const reportTypeLabels: Record<ReportFile['report_type'], string> = {
   daily: 'Harian',
@@ -15,12 +16,22 @@ const reportTypeLabels: Record<ReportFile['report_type'], string> = {
   annual: 'Tahunan',
 }
 
+function getCurrentMonthRange() {
+  const [year, month] = getCurrentReportMonth().split('-').map(Number)
+  const lastDay = new Date(year, month, 0).getDate()
+  return {
+    start: `${year}-${String(month).padStart(2, '0')}-01`,
+    end: `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
+  }
+}
+
 export function ReportsPage() {
   const token = getStoredToken()
+  const currentMonthRange = getCurrentMonthRange()
   const [reports, setReports] = useState<ReportFile[]>([])
   const [reportType, setReportType] = useState<ReportFile['report_type']>('monthly')
-  const [periodStart, setPeriodStart] = useState('2025-02-01')
-  const [periodEnd, setPeriodEnd] = useState('2025-02-28')
+  const [periodStart, setPeriodStart] = useState(currentMonthRange.start)
+  const [periodEnd, setPeriodEnd] = useState(currentMonthRange.end)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)

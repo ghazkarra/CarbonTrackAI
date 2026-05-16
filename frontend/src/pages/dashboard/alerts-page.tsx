@@ -13,6 +13,7 @@ import type { Alert, AlertsOverview, AlertWithRecommendations, SavingsSummary } 
 import type { Recommendation } from '@/features/recommendations/types'
 import { apiRequest, getApiErrorMessage } from '@/lib/api'
 import { getStoredToken } from '@/lib/auth'
+import { getCurrentReportMonth } from '@/lib/utils'
 
 type RecommendationStatusFilter = 'all' | 'active' | 'completed' | 'not-completed' | 'dismissed'
 
@@ -42,31 +43,30 @@ export function AlertsPage() {
   const [pendingCompletion, setPendingCompletion] = useState<Recommendation | null>(null)
   const [completionNotes, setCompletionNotes] = useState<Record<number, string>>({})
   const [search, setSearch] = useState('')
-  const [monthFilter, setMonthFilter] = useState('all')
-  const [generateMonth, setGenerateMonth] = useState('2025-02')
+  const [monthFilter, setMonthFilter] = useState(getCurrentReportMonth)
   const [severityFilter, setSeverityFilter] = useState('all')
   const [alertStatusFilter, setAlertStatusFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [recommendationStatusFilter, setRecommendationStatusFilter] = useState<RecommendationStatusFilter>('all')
 
-  async function loadOverview() {
+  async function loadOverview(reportMonth = monthFilter) {
     if (!token) return
     setIsLoading(true)
-    const data = await apiRequest<AlertsOverview>('/api/alerts/overview', { token })
+    const data = await apiRequest<AlertsOverview>(`/api/alerts/overview?report_month=${encodeURIComponent(reportMonth)}`, { token })
     setOverview(data)
     setIsLoading(false)
   }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      loadOverview().catch((loadError) => {
-        setError(getApiErrorMessage(loadError, 'Gagal memuat alerts dan recommendations'))
+      loadOverview(monthFilter).catch((loadError) => {
+        setError(getApiErrorMessage(loadError, 'Gagal memuat peringatan dan rekomendasi'))
         setIsLoading(false)
       })
     }, 0)
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [monthFilter])
 
   async function generateRecommendations() {
     if (!token) return
@@ -77,12 +77,12 @@ export function AlertsPage() {
       const data = await apiRequest<Recommendation[]>('/api/recommendations/generate', {
         method: 'POST',
         token,
-        body: JSON.stringify({ report_month: generateMonth }),
+        body: JSON.stringify({ report_month: monthFilter }),
       })
-      setMessage(`${data.length} rekomendasi alert berhasil disiapkan.`)
-      await loadOverview()
+      setMessage(`Regenerasi selesai: ${data.length} rekomendasi disiapkan ulang.`)
+      await loadOverview(monthFilter)
     } catch (generateError) {
-      setError(getApiErrorMessage(generateError, 'Gagal membuat rekomendasi'))
+      setError(getApiErrorMessage(generateError, 'Gagal meregenerasi peringatan dan rekomendasi'))
     } finally {
       setIsGenerating(false)
     }
@@ -94,10 +94,10 @@ export function AlertsPage() {
     setError(null)
     try {
       await apiRequest<Alert>(`/api/alerts/${alertId}/acknowledge`, { method: 'PATCH', token })
-      await loadOverview()
+      await loadOverview(monthFilter)
       setPendingAcknowledge(null)
     } catch (ackError) {
-      setError(getApiErrorMessage(ackError, 'Gagal menindaklanjuti alert'))
+      setError(getApiErrorMessage(ackError, 'Gagal menindaklanjuti peringatan'))
     } finally {
       setAcknowledgingId(null)
     }
@@ -113,7 +113,7 @@ export function AlertsPage() {
         token,
         body: JSON.stringify({ is_completed: true, completion_note: completionNotes[recommendation.id] ?? null }),
       })
-      await loadOverview()
+      await loadOverview(monthFilter)
       setPendingCompletion(null)
     } catch (completeError) {
       setError(getApiErrorMessage(completeError, 'Gagal menyelesaikan rekomendasi'))
@@ -121,11 +121,6 @@ export function AlertsPage() {
       setCompletingId(null)
     }
   }
-
-  const months = useMemo(() => {
-    const source = overview?.alerts ?? []
-    return Array.from(new Set(source.map((alert) => alert.machine_usage?.report_month).filter(Boolean) as string[])).sort().reverse()
-  }, [overview])
 
   function visibleRecommendations(alert: AlertWithRecommendations) {
     return alert.recommendations
@@ -154,7 +149,7 @@ export function AlertsPage() {
           ...alert.recommendations.map((recommendation) => `${recommendation.recommendation_title} ${recommendation.recommendation_description}`),
         ]
         const matchesSearch = !keyword || searchableValues.some((value) => value.toLowerCase().includes(keyword))
-        const matchesMonth = monthFilter === 'all' || alert.machine_usage?.report_month === monthFilter
+        const matchesMonth = alert.machine_usage?.report_month === monthFilter
         const matchesSeverity = severityFilter === 'all' || alert.severity === severityFilter
         const matchesAlertStatus = alertStatusFilter === 'all' || alert.status === alertStatusFilter
         const matchesRecommendationFilter = priorityFilter === 'all' && recommendationStatusFilter === 'all' ? true : recommendations.length > 0
@@ -179,13 +174,13 @@ export function AlertsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Alerts & Recommendations</Badge>
-          <h1 className="text-4xl font-semibold tracking-tight">Alerts & Recommendations</h1>
-          <p className="mt-3 text-base text-muted-foreground">Pantau alert operasional, rekomendasi per alert, dan estimasi penghematan dari seluruh rekomendasi.</p>
+          <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/15">Peringatan & Rekomendasi</Badge>
+          <h1 className="text-4xl font-semibold tracking-tight">Peringatan & Rekomendasi</h1>
+          <p className="mt-3 text-base text-muted-foreground">Pantau peringatan operasional, rekomendasi per peringatan, dan estimasi penghematan untuk bulan terpilih.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <MonthPicker value={generateMonth} onChange={setGenerateMonth} className="w-40" ariaLabel="Bulan generate rekomendasi" />
-          <LoadingButton onClick={generateRecommendations} isLoading={isGenerating}><Lightbulb className="size-4" /> Buat rekomendasi</LoadingButton>
+          <MonthPicker value={monthFilter} onChange={setMonthFilter} className="w-40" ariaLabel="Bulan regenerasi" />
+          <LoadingButton onClick={generateRecommendations} isLoading={isGenerating}><Lightbulb className="size-4" /> Regenerasi</LoadingButton>
         </div>
       </div>
 
@@ -197,8 +192,8 @@ export function AlertsPage() {
       <section className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Komposisi alert per severity</CardTitle>
-            <CardDescription className="text-base">Distribusi tingkat risiko dari alert operasional saat ini.</CardDescription>
+            <CardTitle className="text-xl">Komposisi peringatan per tingkat risiko</CardTitle>
+            <CardDescription className="text-base">Distribusi tingkat risiko dari peringatan operasional bulan ini.</CardDescription>
           </CardHeader>
           <CardContent>
             <SeverityDonut data={severityChartData} isLoading={isLoading} />
@@ -218,27 +213,24 @@ export function AlertsPage() {
       <Card>
         <CardHeader className="gap-4">
           <div>
-            <CardTitle className="text-xl">Daftar alert</CardTitle>
+            <CardTitle className="text-xl">Daftar peringatan</CardTitle>
             <CardDescription className="text-base">Prioritas tertinggi dan item yang belum selesai selalu berada di atas.</CardDescription>
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_1fr]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Cari alert, mesin, rekomendasi" value={search} onChange={(event) => setSearch(event.target.value)} />
+              <Input className="pl-9" placeholder="Cari peringatan, mesin, rekomendasi" value={search} onChange={(event) => setSearch(event.target.value)} />
             </div>
-            <select className="h-10 rounded-lg border border-input bg-background px-3 text-sm" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
-              <option value="all">Semua bulan</option>
-              {months.map((month) => <option key={month} value={month}>{month}</option>)}
-            </select>
+            <MonthPicker value={monthFilter} onChange={setMonthFilter} className="w-full" ariaLabel="Bulan daftar peringatan" />
             <select className="h-10 rounded-lg border border-input bg-background px-3 text-sm" value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value)}>
-              <option value="all">Semua severity</option>
+              <option value="all">Semua risiko</option>
               <option value="critical">Kritis</option>
               <option value="high">Tinggi</option>
               <option value="warning">Peringatan</option>
               <option value="info">Info</option>
             </select>
             <select className="h-10 rounded-lg border border-input bg-background px-3 text-sm" value={alertStatusFilter} onChange={(event) => setAlertStatusFilter(event.target.value)}>
-              <option value="all">Semua alert</option>
+              <option value="all">Semua peringatan</option>
               <option value="active">Aktif</option>
               <option value="acknowledged">Ditindaklanjuti</option>
             </select>
@@ -280,8 +272,8 @@ export function AlertsPage() {
 
       <ConfirmDialog
         open={Boolean(pendingAcknowledge)}
-        title="Tindak lanjuti alert ini?"
-        description="Alert akan ditandai sudah ditindaklanjuti dan dipindahkan ke urutan bawah."
+        title="Tindak lanjuti peringatan ini?"
+        description="Peringatan akan ditandai sudah ditindaklanjuti dan dipindahkan ke urutan bawah."
         confirmLabel="Tindak lanjuti"
         isLoading={pendingAcknowledge ? acknowledgingId === pendingAcknowledge.id : false}
         onOpenChange={(open) => {
@@ -369,7 +361,7 @@ function SeverityDonut({ data, isLoading }: { data: ReturnType<typeof buildSever
         </ResponsiveContainer>
       </div>
       <div className="grid gap-2">
-        <p className="text-sm text-muted-foreground">Total alert</p>
+        <p className="text-sm text-muted-foreground">Total peringatan</p>
         <p className="text-3xl font-semibold tracking-tight">{total}</p>
         {data.map((item) => (
           <div key={item.severity} className="flex items-center justify-between gap-3 rounded-md border p-2 text-sm">

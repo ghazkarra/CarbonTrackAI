@@ -22,12 +22,12 @@ def generate_alerts_for_usage(db: Session, usage: MachineUsageRecord) -> list[Al
             create_alert_if_missing(
                 db,
                 usage,
-                alert_type="High Energy Usage",
+                alert_type="Pemakaian Energi Tinggi",
                 severity="high",
-                message=f"{usage.machine_name} has high energy consumption for this period.",
+                message=f"{usage.machine_name} memiliki konsumsi energi tinggi pada periode ini.",
                 triggered_value=f"{usage.energy_kwh} kWh",
                 threshold_value=f">= {HIGH_ENERGY_THRESHOLD_KWH} kWh",
-                recommended_action="Review operating schedule and reduce idle runtime.",
+                recommended_action="Tinjau jadwal operasi dan kurangi waktu mesin menyala tanpa produksi.",
             )
         )
 
@@ -36,12 +36,12 @@ def generate_alerts_for_usage(db: Session, usage: MachineUsageRecord) -> list[Al
             create_alert_if_missing(
                 db,
                 usage,
-                alert_type="Missing Data",
+                alert_type="Data Pemakaian Tidak Lengkap",
                 severity="warning",
-                message=f"{usage.machine_name} has power data but zero usage hours.",
-                triggered_value="0 usage hours",
-                threshold_value="Power > 500 watt with zero usage",
-                recommended_action="Confirm whether the machine was idle or usage data is incomplete.",
+                message=f"{usage.machine_name} memiliki data daya, tetapi jam pemakaian tercatat nol.",
+                triggered_value="0 jam pemakaian",
+                threshold_value="Daya > 500 watt dengan pemakaian nol",
+                recommended_action="Pastikan mesin benar-benar idle atau data jam pemakaian belum lengkap.",
             )
         )
 
@@ -50,12 +50,12 @@ def generate_alerts_for_usage(db: Session, usage: MachineUsageRecord) -> list[Al
             create_alert_if_missing(
                 db,
                 usage,
-                alert_type="Power Mismatch",
+                alert_type="Ketidaksesuaian Daya/Energi",
                 severity="warning",
-                message=usage.validation_message or "Formula mismatch detected.",
-                triggered_value="Manual value differs from formula",
-                threshold_value="2% formula tolerance",
-                recommended_action="Validate watt, kW, usage hours, and energy kWh input.",
+                message=usage.validation_message or "Terdeteksi selisih antara input dan hasil perhitungan rumus.",
+                triggered_value="Nilai manual berbeda dari rumus",
+                threshold_value="Toleransi rumus 2%",
+                recommended_action="Validasi input watt, kW, jam pemakaian, dan energi kWh.",
             )
         )
 

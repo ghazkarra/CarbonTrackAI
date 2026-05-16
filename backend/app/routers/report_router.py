@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 @router.post("/generate", response_model=ReportFileResponse)
 def generate(payload: ReportGenerateRequest, current_user: User = Depends(require_operator), db: Session = Depends(get_db)) -> ReportFile:
     if payload.report_type not in {"daily", "weekly", "monthly", "annual"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid report_type")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Jenis laporan tidak valid")
     return generate_pdf_report(db, current_user, payload.report_type, payload.period_start, payload.period_end)
 
 
@@ -29,7 +29,7 @@ def list_reports(current_user: User = Depends(require_operator), db: Session = D
 def download(report_id: int, current_user: User = Depends(require_operator), db: Session = Depends(get_db)) -> FileResponse:
     report = db.get(ReportFile, report_id)
     if report is None or report.company_id != current_user.company_id or not report.file_path:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Laporan tidak ditemukan")
     return FileResponse(report.file_path, media_type="application/pdf", filename=report.file_path.split("/")[-1])
 
 

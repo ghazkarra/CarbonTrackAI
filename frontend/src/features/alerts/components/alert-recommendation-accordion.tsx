@@ -66,7 +66,7 @@ export function translateStatus(status: string) {
   if (status === 'active') return 'Aktif'
   if (status === 'valid') return 'Valid'
   if (status === 'warning') return 'Peringatan'
-  if (status === 'error') return 'Error'
+  if (status === 'error') return 'Galat'
   return status
 }
 
@@ -76,6 +76,23 @@ export function translatePriority(priority: string) {
   if (priority === 'medium') return 'Sedang'
   if (priority === 'low') return 'Rendah'
   return priority
+}
+
+export function translateCategory(category: string) {
+  if (category === 'energy_efficiency') return 'Efisiensi energi'
+  if (category === 'maintenance') return 'Perawatan'
+  if (category === 'operation') return 'Operasi'
+  if (category === 'equipment_upgrade') return 'Peningkatan peralatan'
+  if (category === 'safety') return 'Keselamatan'
+  if (category === 'reporting') return 'Pelaporan'
+  return category
+}
+
+export function translateAlertType(alertType: string) {
+  if (alertType === 'High Energy Usage') return 'Pemakaian Energi Tinggi'
+  if (alertType === 'Missing Data') return 'Data Pemakaian Tidak Lengkap'
+  if (alertType === 'Power Mismatch') return 'Ketidaksesuaian Daya/Energi'
+  return alertType
 }
 
 type AlertRecommendationAccordionProps = {
@@ -99,7 +116,7 @@ export function AlertRecommendationAccordion({
   onCompletionNoteChange,
   onCompleteRecommendation,
   onAcknowledgeAlert,
-  emptyMessage = 'Tidak ada alert untuk filter ini.',
+  emptyMessage = 'Tidak ada peringatan untuk filter ini.',
 }: AlertRecommendationAccordionProps) {
   if (!alerts.length) {
     return <p className="rounded-md bg-muted p-6 text-sm text-muted-foreground">{emptyMessage}</p>
@@ -124,9 +141,9 @@ export function AlertRecommendationAccordion({
                     </span>
                     <Badge variant="outline" className={visual.badgeClass}>{visual.label}</Badge>
                     <Badge variant="outline">{translateStatus(alert.status)}</Badge>
-                    {allCompleted ? <Badge className="bg-primary/10 text-primary hover:bg-primary/15"><CheckCircle2 className="size-3" /> Complete</Badge> : null}
+                    {allCompleted ? <Badge className="bg-primary/10 text-primary hover:bg-primary/15"><CheckCircle2 className="size-3" /> Selesai</Badge> : null}
                   </div>
-                  <p className="truncate text-lg font-semibold">{alert.alert_type}</p>
+                  <p className="truncate text-lg font-semibold">{translateAlertType(alert.alert_type)}</p>
                   <p className="mt-1 line-clamp-1 text-base text-muted-foreground">{alert.message}</p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
@@ -158,7 +175,7 @@ export function AlertRecommendationAccordion({
               {onAcknowledgeAlert ? (
                 <div className="flex justify-end">
                   <LoadingButton variant="outline" disabled={alert.status === 'acknowledged'} isLoading={acknowledgingId === alert.id} onClick={() => onAcknowledgeAlert(alert)}>
-                    {alert.status === 'acknowledged' ? 'Ditindaklanjuti' : 'Tindak lanjuti alert'}
+                    {alert.status === 'acknowledged' ? 'Ditindaklanjuti' : 'Tindak lanjuti peringatan'}
                   </LoadingButton>
                 </div>
               ) : null}
@@ -186,7 +203,7 @@ function RecommendationCard({ recommendation, note = '', completingId = null, on
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Badge variant="outline">{translatePriority(recommendation.priority)}</Badge>
             <Badge className="bg-primary/10 text-primary hover:bg-primary/15">{translateStatus(recommendation.status)}</Badge>
-            <Badge variant="outline">{recommendation.category}</Badge>
+            <Badge variant="outline">{translateCategory(recommendation.category)}</Badge>
           </div>
           <p className="text-base font-semibold">{recommendation.recommendation_title}</p>
           <p className="mt-1 text-sm text-muted-foreground">{recommendation.recommendation_description}</p>

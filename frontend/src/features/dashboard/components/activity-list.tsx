@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 const activities = [
   { name: 'Kantor Jakarta', detail: 'Laporan Scope 2 disetujui', status: 'Terverifikasi', initials: 'KJ' },
-  { name: 'Batch pemasok 42', detail: 'Pemetaan faktor emisi perlu ditinjau', status: 'Review', initials: 'BP' },
+  { name: 'Batch pemasok 42', detail: 'Pemetaan faktor emisi perlu ditinjau', status: 'Tinjau', initials: 'BP' },
   { name: 'Pabrik Bandung', detail: 'Pemakaian energi turun 9,1%', status: 'Membaik', initials: 'PB' },
   { name: 'Tim audit', detail: 'Bukti kuartalan sudah diunggah', status: 'Baru', initials: 'TA' },
 ] as const

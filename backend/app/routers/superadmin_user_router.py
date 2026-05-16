@@ -36,7 +36,7 @@ def create(payload: SuperadminUserCreateRequest, _: User = Depends(require_super
 def detail(user_id: int, _: User = Depends(require_superadmin), db: Session = Depends(get_db)) -> SuperadminUserResponse:
     user = get_user(db, user_id)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pengguna tidak ditemukan")
     return user
 
 
@@ -44,7 +44,7 @@ def detail(user_id: int, _: User = Depends(require_superadmin), db: Session = De
 def update(user_id: int, payload: SuperadminUserUpdateRequest, _: User = Depends(require_superadmin), db: Session = Depends(get_db)) -> SuperadminUserResponse:
     user = update_user(db, user_id, payload)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pengguna tidak ditemukan")
     return user
 
 
@@ -52,5 +52,5 @@ def update(user_id: int, payload: SuperadminUserUpdateRequest, _: User = Depends
 def delete(user_id: int, _: User = Depends(require_superadmin), db: Session = Depends(get_db)) -> SuperadminUserResponse:
     user = deactivate_user(db, user_id)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pengguna tidak ditemukan")
     return user

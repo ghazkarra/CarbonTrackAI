@@ -18,6 +18,9 @@ from app.services.llm_service import generate_report_summary_with_llm
 
 
 REPORT_TYPES_WITH_COMPLETED = {"monthly", "annual"}
+REPORT_TYPE_LABELS = {"daily": "Harian", "weekly": "Mingguan", "monthly": "Bulanan", "annual": "Tahunan"}
+SEVERITY_LABELS = {"critical": "Kritis", "high": "Tinggi", "warning": "Peringatan", "info": "Info"}
+PRIORITY_LABELS = {"critical": "Kritis", "high": "Tinggi", "medium": "Sedang", "low": "Rendah"}
 
 
 def generate_pdf_report(db: Session, current_user: User, report_type: str, period_start, period_end) -> ReportFile:
@@ -69,7 +72,7 @@ def generate_pdf_report(db: Session, current_user: User, report_type: str, perio
 
     source_context_ids = sorted({context_id for calc in calculations for context_id in (calc.context_ids_json or [])})
     report_data = {
-        "company_name": current_user.company.company_name if current_user.company else "Company",
+        "company_name": current_user.company.company_name if current_user.company else "Perusahaan",
         "report_type": normalized_type,
         "period_start": str(period_start),
         "period_end": str(period_end),
@@ -85,7 +88,7 @@ def generate_pdf_report(db: Session, current_user: User, report_type: str, perio
 
     render_pdf(
         file_path=file_path,
-        company_name=current_user.company.company_name if current_user.company else "Company",
+        company_name=current_user.company.company_name if current_user.company else "Perusahaan",
         report_type=normalized_type,
         period_start=str(period_start),
         period_end=str(period_end),
@@ -106,16 +109,16 @@ def generate_pdf_report(db: Session, current_user: User, report_type: str, perio
 def fallback_summary(report_data: dict) -> dict:
     return {
         "executive_summary": (
-            f"During {report_data['period_start']} to {report_data['period_end']}, "
-            f"total energy consumption reached {report_data['total_energy_kwh']:,.2f} kWh "
-            f"with estimated emissions of {report_data['estimated_co2e_kg']:,.2f} kg CO2e."
+            f"Selama periode {report_data['period_start']} sampai {report_data['period_end']}, "
+            f"total konsumsi energi mencapai {report_data['total_energy_kwh']:,.2f} kWh "
+            f"dengan estimasi emisi {report_data['estimated_co2e_kg']:,.2f} kg CO2e."
         ),
         "key_findings": [
-            f"{report_data['records_count']} machine usage records were included.",
-            f"{report_data['active_alerts_count']} active alerts were identified.",
-            f"{report_data['active_recommendations_count']} active recommendations are available.",
+            f"{report_data['records_count']} data pemakaian mesin disertakan.",
+            f"{report_data['active_alerts_count']} peringatan aktif teridentifikasi.",
+            f"{report_data['active_recommendations_count']} rekomendasi aktif tersedia.",
         ],
-        "management_notes": ["Prioritize high-energy machines and complete recommendations before the next reporting period."],
+        "management_notes": ["Prioritaskan mesin dengan konsumsi energi tinggi dan selesaikan rekomendasi sebelum periode pelaporan berikutnya."],
     }
 
 
@@ -142,40 +145,40 @@ def render_pdf(
     small_style = ParagraphStyle("CarbonSmall", parent=styles["BodyText"], fontSize=8, leading=10, textColor=colors.HexColor("#475569"))
 
     story = [
-        Paragraph("CarbonCore AI Emission Report", title_style),
+        Paragraph("Laporan Emisi CarbonCore AI", title_style),
         Paragraph(company_name, styles["Heading3"]),
-        Paragraph(f"Report Type: {report_type.title()} | Period: {period_start} to {period_end}", small_style),
+        Paragraph(f"Jenis laporan: {REPORT_TYPE_LABELS.get(report_type, report_type)} | Periode: {period_start} sampai {period_end}", small_style),
         Spacer(1, 8),
         metric_table(total_energy, total_co2e, len(alerts), len(active_recommendations), len(completed_recommendations)),
         Spacer(1, 10),
-        Paragraph("Executive Summary", heading_style),
-        Paragraph(str(summary.get("executive_summary") or "No summary available."), body_style),
+        Paragraph("Ringkasan Eksekutif", heading_style),
+        Paragraph(str(summary.get("executive_summary") or "Ringkasan belum tersedia."), body_style),
     ]
 
     key_findings = summary.get("key_findings") or []
     if key_findings:
-        story.append(Paragraph("Key Findings", heading_style))
+        story.append(Paragraph("Temuan Utama", heading_style))
         for finding in key_findings[:5]:
             story.append(Paragraph(f"- {finding}", body_style))
 
-    story.extend([Paragraph("Top Machine Usage", heading_style), machine_table(records)])
-    story.extend([Paragraph("Active Alerts", heading_style), alert_table(alerts)])
-    story.extend([Paragraph("Active Recommendations", heading_style), recommendation_table(active_recommendations, include_status=False)])
+    story.extend([Paragraph("Pemakaian Mesin Tertinggi", heading_style), machine_table(records)])
+    story.extend([Paragraph("Peringatan Aktif", heading_style), alert_table(alerts)])
+    story.extend([Paragraph("Rekomendasi Aktif", heading_style), recommendation_table(active_recommendations, include_status=False)])
 
     if report_type in REPORT_TYPES_WITH_COMPLETED:
-        story.extend([Paragraph("Completed Recommendations", heading_style), recommendation_table(completed_recommendations, include_status=True)])
+        story.extend([Paragraph("Rekomendasi Selesai", heading_style), recommendation_table(completed_recommendations, include_status=True)])
     else:
-        story.append(Paragraph("Completed recommendations are intentionally excluded from daily and weekly reports.", small_style))
+        story.append(Paragraph("Rekomendasi selesai tidak disertakan dalam laporan harian dan mingguan.", small_style))
 
-    story.append(Paragraph("Source Context References", heading_style))
-    story.append(Paragraph(", ".join(source_context_ids) if source_context_ids else "No retrieved ChromaDB context IDs were attached to this report period.", small_style))
+    story.append(Paragraph("Referensi Konteks Sumber", heading_style))
+    story.append(Paragraph(", ".join(source_context_ids) if source_context_ids else "Tidak ada ID konteks ChromaDB yang terlampir pada periode laporan ini.", small_style))
     doc.build(story)
 
 
 def metric_table(total_energy: float, total_co2e: float, alerts_count: int, active_recommendations_count: int, completed_recommendations_count: int) -> Table:
     table = Table(
         [
-            ["Total Energy", "Estimated CO2e", "Active Alerts", "Active Recs", "Completed Recs"],
+            ["Total Energi", "Estimasi CO2e", "Peringatan Aktif", "Rekom. Aktif", "Rekom. Selesai"],
             [f"{total_energy:,.2f} kWh", f"{total_co2e:,.2f} kg", str(alerts_count), str(active_recommendations_count), str(completed_recommendations_count)],
         ],
         colWidths=[35 * mm, 35 * mm, 28 * mm, 28 * mm, 32 * mm],
@@ -185,37 +188,37 @@ def metric_table(total_energy: float, total_co2e: float, alerts_count: int, acti
 
 
 def machine_table(records) -> Table:
-    data = [["Machine", "Location", "Qty", "kW", "Hours", "kWh"]]
+    data = [["Mesin", "Lokasi", "Jumlah", "kW", "Jam", "kWh"]]
     for record in records:
         data.append([record.machine_name, record.machine_location, str(record.machine_quantity), str(record.machine_power_kw), str(record.usage_hours), str(record.energy_kwh)])
     if len(data) == 1:
-        data.append(["No records", "-", "-", "-", "-", "-"])
+        data.append(["Tidak ada data", "-", "-", "-", "-", "-"])
     table = Table(data, colWidths=[42 * mm, 30 * mm, 15 * mm, 24 * mm, 24 * mm, 28 * mm])
     table.setStyle(base_table_style())
     return table
 
 
 def alert_table(alerts) -> Table:
-    data = [["Severity", "Type", "Message", "Action"]]
+    data = [["Risiko", "Jenis", "Pesan", "Aksi"]]
     for alert in alerts:
-        data.append([alert.severity, alert.alert_type, alert.message, alert.recommended_action or "-"])
+        data.append([SEVERITY_LABELS.get(alert.severity, alert.severity), alert.alert_type, alert.message, alert.recommended_action or "-"])
     if len(data) == 1:
-        data.append(["-", "No alerts", "-", "-"])
+        data.append(["-", "Tidak ada peringatan", "-", "-"])
     table = Table(data, colWidths=[22 * mm, 34 * mm, 62 * mm, 48 * mm])
     table.setStyle(base_table_style(header_bg="#fee2e2"))
     return table
 
 
 def recommendation_table(recommendations, include_status: bool) -> Table:
-    headers = ["Priority", "Title", "Machine", "Status"] if include_status else ["Priority", "Title", "Machine"]
+    headers = ["Prioritas", "Judul", "Mesin", "Status"] if include_status else ["Prioritas", "Judul", "Mesin"]
     data = [headers]
     for recommendation in recommendations:
-        row = [recommendation.priority, recommendation.recommendation_title, recommendation.related_machine_name or "-"]
+        row = [PRIORITY_LABELS.get(recommendation.priority, recommendation.priority), recommendation.recommendation_title, recommendation.related_machine_name or "-"]
         if include_status:
-            row.append(recommendation.completion_note or "completed")
+            row.append(recommendation.completion_note or "Selesai")
         data.append(row)
     if len(data) == 1:
-        data.append(["-", "No recommendations", "-"] + (["-"] if include_status else []))
+        data.append(["-", "Tidak ada rekomendasi", "-"] + (["-"] if include_status else []))
     widths = [24 * mm, 78 * mm, 38 * mm, 28 * mm] if include_status else [24 * mm, 90 * mm, 48 * mm]
     table = Table(data, colWidths=widths)
     table.setStyle(base_table_style(header_bg="#e0f2fe"))

@@ -46,8 +46,11 @@ export function getApiErrorMessage(error: unknown, fallback = 'Terjadi kendala. 
   if (error instanceof ApiError) {
     if (typeof error.detail === 'string') {
       if (error.detail === 'Email is already used') return 'Email ini sudah dipakai. Gunakan email lain.'
+      if (error.detail === 'Email sudah digunakan') return 'Email ini sudah dipakai. Gunakan email lain.'
       if (error.detail === 'Company not found') return 'Perusahaan tidak ditemukan. Pilih perusahaan yang tersedia.'
+      if (error.detail === 'Perusahaan tidak ditemukan') return 'Perusahaan tidak ditemukan. Pilih perusahaan yang tersedia.'
       if (error.detail === 'User not found') return 'Pengguna tidak ditemukan. Kembali ke daftar pengguna lalu pilih data yang tersedia.'
+      if (error.detail === 'Pengguna tidak ditemukan') return 'Pengguna tidak ditemukan. Kembali ke daftar pengguna lalu pilih data yang tersedia.'
       if (error.detail.trim()) return error.detail
     }
 
