@@ -1,9 +1,12 @@
-import { BarChart3, Building2, FileCheck2, Gauge, Leaf, Settings } from 'lucide-react'
+import { AlertTriangle, BarChart3, Building2, CheckSquare, ClipboardList, FileCheck2, Gauge, Leaf, Settings } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { label: 'Overview', href: '/dashboard', icon: Gauge, end: true },
+  { label: 'Machine Usage', href: '/dashboard/machine-usage', icon: ClipboardList },
+  { label: 'Recommendations', href: '/dashboard/recommendations', icon: CheckSquare },
+  { label: 'Alerts', href: '/dashboard/alerts', icon: AlertTriangle },
   { label: 'Emissions', href: '/dashboard/emissions', icon: BarChart3 },
   { label: 'Reports', href: '/dashboard/reports', icon: FileCheck2 },
   { label: 'Facilities', href: '/dashboard/facilities', icon: Building2 },

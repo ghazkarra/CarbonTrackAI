@@ -1,0 +1,3 @@
+row_id,title,equipment_or_vehicle_type,fuel_type,co2_kg_per_kwh,notes,source_url
+EF-01,Electric grid default factor,electric_machine,electricity,0.85,Default MVP electricity emission factor,internal
+EF-02,Diesel generator usage,generator,diesel,0.95,Higher emission context for genset operations,internal

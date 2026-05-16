@@ -1,0 +1,3 @@
+row_id,title,power_class_kw,pollutant,limit_g_per_kwh,notes,source_url
+EPA-01,Nonroad diesel engine standard,75-130,NOx,3.4,Tier emission standard reference,https://www.epa.gov/
+EPA-02,Nonroad diesel engine standard,130-560,PM,0.02,Tier emission standard reference,https://www.epa.gov/

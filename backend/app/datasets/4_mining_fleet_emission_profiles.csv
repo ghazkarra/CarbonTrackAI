@@ -1,0 +1,3 @@
+row_id,title,equipment_or_vehicle_type,fuel_type,power_class_kw,co2_min_kg_per_hr,co2_max_kg_per_hr,notes,source_url
+FLT-01,Large genset profile,generator,diesel,80,40,80,Reduce low-load runtime,internal
+FLT-02,Compressor profile,compressor,electricity,15,5,15,Air leak maintenance recommended,internal

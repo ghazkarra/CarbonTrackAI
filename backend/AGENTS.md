@@ -3,22 +3,22 @@
 ## Scope
 - Work only inside `backend` unless user asks otherwise.
 - Backend is planned as FastAPI for CarbonTrackAI APIs.
-- Current code is early skeleton under `app`.
+- Current code exposes FastAPI app under `app/main.py`.
 
 ## Commands
 - Activate Windows venv: `.\venv\Scripts\Activate.ps1`
 - Install dependencies: `pip install -r requirements.txt`
 - Run module entrypoint: `python -m app`
-- Preferred future dev server, after exposing module-level `app`: `uvicorn app.__main__:app --reload`
+- Preferred dev server: `uvicorn app.main:app --reload`
 
-## Current Caveats
-- `requirements.txt` is currently empty.
-- `.env.example` currently looks like package names, not environment variables.
-- `app/__main__.py` defines `main()` but does not expose a module-level `app` object yet.
-- Fix these before adding real endpoints or deployment instructions.
+## Current State
+- `requirements.txt` contains FastAPI, SQLAlchemy, auth, and test dependencies.
+- `.env.example` contains safe placeholder environment variables.
+- `app/main.py` exposes module-level `app` for `uvicorn app.main:app --reload`.
+- SQLite is the default development database; MySQL is supported by setting `DATABASE_URL`.
 
 ## Project Structure
-- API routes should live in `app/routes`.
+- API routes should live in `app/routers`.
 - Request and response models should live in `app/schemas`.
 - Business logic should live in `app/services`.
 - Database connection/session code should live in `app/database.py`.
