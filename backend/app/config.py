@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://integrate.api.nvidia.com/v1"
     llm_api_key: str | None = None
     llm_model: str = "deepseek-ai/deepseek-v4-pro"
+    llm_timeout_seconds: float = 6.0
     default_electricity_ef_kgco2e_per_kwh: float = 0.85
     pdf_output_dir: str = "./storage/reports"
 

@@ -174,6 +174,9 @@ export function MachineUsagePage() {
             <CardDescription>Use the final template without company_name. Company is taken from login session.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <Button variant="outline" asChild>
+              <a href="/sample_machine_usage_2025_02.csv" download>Download sample CSV</a>
+            </Button>
             <Input type="file" accept=".csv" onChange={(event) => handleCsvUpload(event.target.files?.[0] ?? null)} />
             <code className="block rounded-md bg-muted p-3 text-xs text-muted-foreground">report_month,row_no,machine_name,machine_location,machine_quantity,machine_power_watt,machine_power_kw,usage_hours,energy_kwh</code>
             {importResult ? (

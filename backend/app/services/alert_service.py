@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.models.alert import Alert
 from app.models.machine_usage import MachineUsageRecord
 from app.models.user import User
+from app.services.llm_service import explain_alert_with_llm
+from app.services.rag_retrieval_service import retrieve_machine_context
 
 
 HIGH_ENERGY_THRESHOLD_KWH = Decimal("250")
@@ -78,6 +80,28 @@ def create_alert_if_missing(
     if existing:
         return existing
 
+    source_context = {"source": "rule_based_mvp"}
+    try:
+        retrieved_context = retrieve_machine_context(usage)
+        explanation = explain_alert_with_llm(
+            {
+                "alert_type": alert_type,
+                "severity": severity,
+                "machine_name": usage.machine_name,
+                "triggered_value": triggered_value,
+                "threshold_value": threshold_value,
+                "message": message,
+                "recommended_action": recommended_action,
+            },
+            retrieved_context,
+        )
+        if explanation:
+            message = str(explanation.get("message") or message)
+            recommended_action = str(explanation.get("recommended_action") or recommended_action)
+            source_context = {"source": "llm_with_rag", "severity_reason": explanation.get("severity_reason"), "retrieved_context": retrieved_context}
+    except Exception:
+        source_context = {"source": "rule_based_mvp"}
+
     alert = Alert(
         company_id=usage.company_id,
         machine_usage_id=usage.id,
@@ -88,7 +112,7 @@ def create_alert_if_missing(
         threshold_value=threshold_value,
         recommended_action=recommended_action,
         status="active",
-        source_context_json={"source": "rule_based_mvp"},
+        source_context_json=source_context,
     )
     db.add(alert)
     db.flush()

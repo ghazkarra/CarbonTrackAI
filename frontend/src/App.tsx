@@ -12,6 +12,7 @@ import { LoginPage } from '@/pages/login-page'
 import { MachineUsagePage } from '@/pages/dashboard/machine-usage-page'
 import { RegisterPage } from '@/pages/register-page'
 import { RecommendationsPage } from '@/pages/dashboard/recommendations-page'
+import { SuperadminPage } from '@/pages/dashboard/superadmin-page'
 import './App.css'
 
 function App() {
@@ -31,6 +32,9 @@ function App() {
           <Route path="facilities" element={<FacilitiesPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
+      </Route>
+      <Route element={<ProtectedRoute role="superadmin" />}>
+        <Route path="/dashboard/superadmin" element={<SuperadminPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
