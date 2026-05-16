@@ -1,9 +1,87 @@
 # models.py
-from sqlalchemy import Column, Integer, String, Float, DECIMAL, DateTime, Text, ForeignKey
+from enum import Enum as PyEnum
+from sqlalchemy import Column, Integer, String, DECIMAL, DateTime, Text, ForeignKey, Date, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
+# Create Role enum for user roles
+
+
+class UserRole(PyEnum):
+    ADMIN = "admin"
+    USER = "user"
+    EMPLOYEE = "employee"
+
+
+class ReportType(PyEnum):
+    """Enum for report period types"""
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
+
+    @classmethod
+    def get_display_names(cls):
+        """Get display names for UI dropdowns"""
+        return {
+            cls.DAILY: "Daily Report",
+            cls.WEEKLY: "Weekly Report",
+            cls.MONTHLY: "Monthly Report",
+            cls.YEARLY: "Yearly Report"
+        }
+
+    @classmethod
+    def get_date_ranges(cls, reference_date=None):
+        """Get date ranges for each report type"""
+        from datetime import datetime, timedelta
+        from dateutil.relativedelta import relativedelta
+
+        if reference_date is None:
+            reference_date = datetime.now().date()
+
+        ranges = {}
+
+        # Daily range
+        ranges[cls.DAILY] = {
+            'start': reference_date,
+            'end': reference_date,
+            'label': f"Daily Report - {reference_date.strftime('%Y-%m-%d')}"
+        }
+
+        # Weekly range (Monday to Sunday)
+        start_of_week = reference_date - \
+            timedelta(days=reference_date.weekday())
+        ranges[cls.WEEKLY] = {
+            'start': start_of_week,
+            'end': start_of_week + timedelta(days=6),
+            'label': f"Weekly Report - {start_of_week.strftime('%Y-%m-%d')} to {(start_of_week + timedelta(days=6)).strftime('%Y-%m-%d')}"
+        }
+
+        # Monthly range
+        start_of_month = reference_date.replace(day=1)
+        if reference_date.month == 12:
+            end_of_month = reference_date.replace(
+                year=reference_date.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            end_of_month = reference_date.replace(
+                month=reference_date.month + 1, day=1) - timedelta(days=1)
+        ranges[cls.MONTHLY] = {
+            'start': start_of_month,
+            'end': end_of_month,
+            'label': f"Monthly Report - {start_of_month.strftime('%B %Y')}"
+        }
+
+        # Yearly range
+        start_of_year = reference_date.replace(month=1, day=1)
+        end_of_year = reference_date.replace(month=12, day=31)
+        ranges[cls.YEARLY] = {
+            'start': start_of_year,
+            'end': end_of_year,
+            'label': f"Yearly Report - {reference_date.year}"
+        }
+
+        return ranges
 
 
 class Company(Base):
@@ -15,8 +93,12 @@ class Company(Base):
     location = Column(String(255))
     created_at = Column(DateTime, default=datetime.now)
 
+    # Relationships
     industrial_activities = relationship(
         "IndustrialActivity", back_populates="company", cascade="all, delete-orphan")
+    generated_reports = relationship(
+        "GeneratedReport", back_populates="company", cascade="all, delete-orphan")
+    users = relationship("User", back_populates="company")
 
 
 class User(Base):
@@ -25,7 +107,15 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True)
-    role = Column(String(50), default="admin")
+    role = Column(
+        SQLEnum(
+            UserRole,
+            values_callable=lambda enum_class: [e.value for e in enum_class],
+            name="user_role",
+            native_enum=False,
+        ),
+        default=UserRole.ADMIN,
+    )
     created_at = Column(DateTime, default=datetime.now)
 
     review_logs = relationship("ReviewLog", back_populates="user")
@@ -112,3 +202,50 @@ class ReviewLog(Base):
     user = relationship("User", back_populates="review_logs")
     selected_emission_factor = relationship(
         "EmissionFactor", back_populates="review_logs")
+
+
+class GeneratedReport(Base):
+    __tablename__ = "generated_reports"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(Integer, ForeignKey(
+        "companies.id", ondelete="CASCADE"))
+    report_type = Column(
+        SQLEnum(
+            ReportType,
+            values_callable=lambda enum_class: [e.value for e in enum_class],
+            name="report_type",
+            native_enum=False,
+        ),
+        nullable=False,
+    )
+    period_start = Column(Date, nullable=False)
+    period_end = Column(Date, nullable=False)
+    period_label = Column(String(100))
+    total_emission = Column(DECIMAL(15, 4))
+    include_completed_recommendations = Column(Boolean, default=False)
+    pdf_file_path = Column(String(500))
+    created_at = Column(DateTime, default=datetime.now)
+
+    # Relationships
+    company = relationship("Company", back_populates="generated_reports")
+
+    def __repr__(self):
+        return f"<GeneratedReport(id={self.id}, company_id={self.company_id}, type={self.report_type.value}, period={self.period_label})>"
+
+    @property
+    def report_type_display(self):
+        """Get human-readable report type"""
+        return ReportType.get_display_names().get(self.report_type, self.report_type.value)
+
+    @property
+    def period_days(self):
+        """Calculate number of days in the period"""
+        return (self.period_end - self.period_start).days + 1
+
+    @property
+    def average_daily_emission(self):
+        """Calculate average daily emission for the period"""
+        if self.period_days > 0 and self.total_emission:
+            return self.total_emission / self.period_days
+        return None

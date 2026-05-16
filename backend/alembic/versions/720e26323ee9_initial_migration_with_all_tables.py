@@ -1,8 +1,8 @@
 """Initial migration with all tables
 
-Revision ID: 340a8cde0274
+Revision ID: 720e26323ee9
 Revises: 
-Create Date: 2026-05-16 10:53:58.979678
+Create Date: 2026-05-16 12:06:42.095496
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '340a8cde0274'
+revision: str = '720e26323ee9'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -45,10 +45,24 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('name', sa.String(length=255), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=True),
-    sa.Column('role', sa.String(length=50), nullable=True),
+    sa.Column('role', sa.Enum('admin', 'user', 'employee', name='user_role', native_enum=False), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
+    )
+    op.create_table('generated_reports',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('company_id', sa.Integer(), nullable=True),
+    sa.Column('report_type', sa.Enum('daily', 'weekly', 'monthly', 'yearly', name='report_type', native_enum=False), nullable=False),
+    sa.Column('period_start', sa.Date(), nullable=False),
+    sa.Column('period_end', sa.Date(), nullable=False),
+    sa.Column('period_label', sa.String(length=100), nullable=True),
+    sa.Column('total_emission', sa.DECIMAL(precision=15, scale=4), nullable=True),
+    sa.Column('include_completed_recommendations', sa.Boolean(), nullable=True),
+    sa.Column('pdf_file_path', sa.String(length=500), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['company_id'], ['companies.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('industrial_activities',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -103,6 +117,7 @@ def downgrade() -> None:
     op.drop_table('review_logs')
     op.drop_table('ai_recommendations')
     op.drop_table('industrial_activities')
+    op.drop_table('generated_reports')
     op.drop_table('users')
     op.drop_table('emission_factors')
     op.drop_table('companies')
