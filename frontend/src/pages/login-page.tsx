@@ -15,8 +15,8 @@ const rememberedEmailKey = 'carbontrackai:remembered-email'
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState(() => window.localStorage.getItem(rememberedEmailKey) ?? 'operator@carboncore.ai')
-  const [password, setPassword] = useState('password')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -134,6 +134,7 @@ export function LoginPage() {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
+                    placeholder="Masukkan kata sandi"
                     className="h-12 rounded-full border-slate-200 bg-slate-50 pl-11 pr-12 text-sm transition-all placeholder:text-slate-400 focus-visible:border-emerald-500 focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-emerald-100"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
