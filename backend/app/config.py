@@ -1,21 +1,26 @@
-# config.py
-import os
-from dotenv import load_dotenv
+from functools import lru_cache
 
-load_dotenv()
-DATABASE_NAME = os.getenv("DATABASE_NAME", "emissions_db")
-DATABASE_USER = os.getenv("DATABASE_USER", "root")
-DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD", "")
-DATABASE_HOST = os.getenv("DATABASE_HOST", "localhost")
-DATABASE_PORT = os.getenv("DATABASE_PORT", "3306")
-DATABASE_URL = f"mysql+pymysql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings:
-    EMISSION_fACTOR = 0.85
-    DATABASE_URL = DATABASE_URL
-    API_TITLE = "Industrial Emissions API"
-    API_VERSION = "1.0.0"
+class Settings(BaseSettings):
+    app_env: str = "development"
+    database_url: str = "sqlite:///./carboncore_dev.db"
+    jwt_secret_key: str = "change-me-in-development"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 1440
+    chroma_db_path: str = "./chroma_db"
+    chroma_collection_name: str = "emission_knowledge_base"
+    llm_base_url: str = "https://integrate.api.nvidia.com/v1"
+    llm_api_key: str | None = None
+    llm_model: str = "deepseek-ai/deepseek-v4-pro"
+    llm_timeout_seconds: float = 6.0
+    default_electricity_ef_kgco2e_per_kwh: float = 0.85
+    pdf_output_dir: str = "./storage/reports"
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
-settings = Settings()
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

@@ -1,0 +1,3 @@
+id,measurement_context,phase,year,metric,unit,n_samples,EC_median,OEL_EU_mgm3,pct_exceeding_OEL,ECS_installed,ECS_type,EC_reduction_pct,NO2_reduction_pct,NO_reduction_pct,directive_reference,source_url
+RW-02,underground mine diesel particulate exposure,pre_ECS,2021,elemental_carbon_EC,mg/m3,20,0.145,0.05,90,FALSE,,,,, EU Directive 2019/130,https://www.mdpi.com/2571-8797/7/4/104
+RW-03,underground mine diesel particulate exposure,post_ECS,2023,elemental_carbon_EC,mg/m3,32,0.034,0.05,28,TRUE,Proventia NOxBuster (DPF + SCR),77,72,77.5,EU Directive 2019/130,https://www.mdpi.com/2571-8797/7/4/104

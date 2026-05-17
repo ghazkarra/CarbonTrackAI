@@ -1,46 +1,51 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-from app.routes import test
-# Create app instance globally (not inside a function)
-app = FastAPI(title="My API", version="1.0.0")
 
-# CORS Configuration
-origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-]
+from app.database import Base, SessionLocal, engine
+from app.models import *  # noqa: F403 - ensure SQLAlchemy models are registered
+from app.routers import alert_router, auth_router, dashboard_router, dataset_router, dev_router, machine_usage_router, recommendation_router, report_router, superadmin_user_router
+from app.services.database_compatibility_service import ensure_database_compatibility
+from app.services.recommendation_service import backfill_recommendation_links_and_savings
+from app.services.seed_service import seed_database
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    ensure_database_compatibility(engine)
+    db = SessionLocal()
+    try:
+        seed_database(db)
+        backfill_recommendation_links_and_savings(db)
+    finally:
+        db.close()
+    yield
+
+
+app = FastAPI(title="CarbonCore AI API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    allow_credentials=True,
 )
-
-# Health check endpoint
 
 
 @app.get("/health")
-def health_check():
-    return {"status": "ok", "message": "Backend is running!"}
+def health_check() -> dict[str, str]:
+    return {"status": "ok", "message": "CarbonCore AI backend is running"}
 
 
-app.include_router(test.router)
-
-
-@app.get("/api/data")
-def get_data():
-    return {"data": ["item1", "item2", "item3"]}
-
-
-@app.post("/api/data")
-def create_data(item: dict):
-    return {"message": "Item created", "item": item}
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+app.include_router(auth_router.router)
+app.include_router(machine_usage_router.router)
+app.include_router(dashboard_router.router)
+app.include_router(recommendation_router.router)
+app.include_router(alert_router.router)
+app.include_router(report_router.router)
+app.include_router(dataset_router.router)
+app.include_router(superadmin_user_router.router)
+app.include_router(dev_router.router)
