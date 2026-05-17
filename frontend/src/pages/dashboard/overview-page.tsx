@@ -93,7 +93,7 @@ export function OverviewPage() {
     },
   ]
 
-  const topAlert = useMemo(() => pickTopAlert(alertsOverview?.alerts ?? []), [alertsOverview])
+  const topAlerts = useMemo(() => pickTopAlerts(alertsOverview?.alerts ?? []), [alertsOverview])
   const topMachines = summary.top_machines.slice(0, 5)
   const maxTopMachineEnergy = Math.max(0, ...topMachines.map((machine) => Number(machine.energy_kwh)))
   const recommendationTotal = summary.recommendation_progress.active + summary.recommendation_progress.completed + summary.recommendation_progress.dismissed
@@ -135,7 +135,7 @@ export function OverviewPage() {
             <EmissionsChart data={summary.emission_trend} />
           </CardContent>
         </Card>
-        <TopAlertCard alert={topAlert} isLoading={isLoading} />
+        <TopAlertCard alerts={topAlerts} isLoading={isLoading} />
       </section>
 
       <section className="grid items-start gap-4 xl:grid-cols-2">
@@ -230,29 +230,34 @@ export function OverviewPage() {
   )
 }
 
-function pickTopAlert(alerts: AlertWithRecommendations[]) {
+function pickTopAlerts(alerts: AlertWithRecommendations[]) {
   return [...alerts].sort((first, second) => {
     return Number(first.status === 'acknowledged') - Number(second.status === 'acknowledged')
       || severityOrder[second.severity] - severityOrder[first.severity]
       || new Date(second.created_at).getTime() - new Date(first.created_at).getTime()
-  })[0] ?? null
+  }).slice(0, 3)
 }
 
-function TopAlertCard({ alert, isLoading }: { alert: AlertWithRecommendations | null; isLoading: boolean }) {
+function TopAlertCard({ alerts, isLoading }: { alerts: AlertWithRecommendations[]; isLoading: boolean }) {
   if (isLoading) {
     return (
       <Card className="h-fit border-border/70 shadow-sm">
         <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
         <CardContent className="space-y-3">
-          <Skeleton className="h-10 w-10" />
-          <Skeleton className="h-5 w-full" />
-          <Skeleton className="h-16 w-full" />
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="space-y-2 rounded-md border p-3">
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          ))}
+          <Skeleton className="h-10 w-full" />
         </CardContent>
       </Card>
     )
   }
 
-  if (!alert) {
+  if (!alerts.length) {
     return (
       <Card className="h-fit border-border/70 shadow-sm">
         <CardHeader>
@@ -266,33 +271,43 @@ function TopAlertCard({ alert, isLoading }: { alert: AlertWithRecommendations | 
     )
   }
 
-  const visual = getSeverityVisual(alert.severity)
-  const SeverityIcon = visual.icon
-
   return (
     <Card className="h-fit border-border/70 shadow-sm">
       <CardHeader>
         <CardTitle className="text-xl">Alert teratas</CardTitle>
-        <CardDescription className="text-base">Prioritas tertinggi untuk ditinjau.</CardDescription>
+        <CardDescription className="text-base">Peringatan prioritas paling krusial untuk ditinjau.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-2">
-          <span className={`grid size-10 place-items-center rounded-md ring-1 ${visual.softClass}`}><SeverityIcon className="size-5" /></span>
-          <div>
-            <Badge variant="outline" className={visual.badgeClass}>{visual.label}</Badge>
-            <p className="mt-1 text-xs text-muted-foreground">{translateStatus(alert.status)}</p>
-          </div>
-        </div>
-        <div>
-          <p className="font-semibold leading-snug">{translateAlertType(alert.alert_type)}</p>
-          <p className="mt-2 line-clamp-4 text-sm text-muted-foreground">{alert.message}</p>
-        </div>
-        <div className="rounded-md bg-muted/55 p-3 text-sm">
-          <p className="text-muted-foreground">Mesin</p>
-          <p className="mt-1 font-medium">{alert.machine_usage?.machine_name ?? 'Rekomendasi umum'}</p>
+        <div className="grid gap-3">
+          {alerts.map((alert, index) => {
+            const visual = getSeverityVisual(alert.severity)
+            const SeverityIcon = visual.icon
+
+            return (
+              <div key={alert.id} className="rounded-md border bg-card p-3">
+                <div className="flex items-start gap-3">
+                  <span className={`mt-0.5 grid size-9 shrink-0 place-items-center rounded-md ring-1 ${visual.softClass}`}>
+                    <SeverityIcon className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground">#{index + 1}</span>
+                      <Badge variant="outline" className={visual.badgeClass}>{visual.label}</Badge>
+                      <Badge variant="outline">{translateStatus(alert.status)}</Badge>
+                    </div>
+                    <p className="mt-2 line-clamp-1 font-semibold leading-snug">{translateAlertType(alert.alert_type)}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{alert.message}</p>
+                    <p className="mt-2 truncate text-xs text-muted-foreground">
+                      {alert.machine_usage?.machine_name ?? 'Rekomendasi umum'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
         <Button asChild className="w-full">
-          <Link to="/dashboard/alerts">Lihat detail <ArrowRight className="size-4" /></Link>
+          <Link to="/dashboard/alerts">Lihat detail peringatan <ArrowRight className="size-4" /></Link>
         </Button>
       </CardContent>
     </Card>
